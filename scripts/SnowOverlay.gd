@@ -12,6 +12,7 @@ func _ready() -> void:
 			"drift": randf_range(-10.0, 14.0),
 			"radius": randf_range(1.0, 2.8),
 			"alpha": randf_range(0.35, 0.85),
+			"streak": index % 5 == 0,
 		})
 	set_process(true)
 
@@ -38,4 +39,7 @@ func _draw() -> void:
 	for flake in flakes:
 		var position: Vector2 = flake["position"] * size
 		var color := Color(0.88, 0.96, 1.0, flake["alpha"])
-		draw_circle(position, flake["radius"], color)
+		if flake["streak"]:
+			draw_line(position, position + Vector2(7.0, 12.0), color, 1.0)
+		else:
+			draw_circle(position, flake["radius"], color)
