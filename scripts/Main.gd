@@ -94,6 +94,9 @@ var goals_menu_panel: PanelContainer
 var log_menu_panel: PanelContainer
 var placement_layer: Control
 var placement_preview: TextureRect
+var top_margin: MarginContainer
+var right_dock: Control
+var quick_actions: Control
 var selected_panel: Control
 var move_mode_button: Button
 var map_status_label: Label
@@ -110,7 +113,7 @@ var selected_risk: Label
 var selected_output: Label
 var condition_bar: ProgressBar
 var readiness_bar: ProgressBar
-var ability_list: HBoxContainer
+var ability_list: HFlowContainer
 var morale_bar: ProgressBar
 var heat_bar: ProgressBar
 var day_progress: ProgressBar
@@ -126,6 +129,7 @@ func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	game = GameStateScript.new()
 	_build_interface()
+	resized.connect(_apply_responsive_layout)
 	game.changed.connect(_refresh)
 	_refresh()
 
@@ -149,7 +153,7 @@ func _build_interface() -> void:
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(overlay)
 
-	var top_margin := MarginContainer.new()
+	top_margin = MarginContainer.new()
 	top_margin.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	top_margin.add_theme_constant_override("margin_left", 18)
 	top_margin.add_theme_constant_override("margin_top", 14)
@@ -162,7 +166,7 @@ func _build_interface() -> void:
 	top_stack.add_child(_build_top_hud())
 	top_stack.add_child(_build_resource_strip())
 
-	var right_dock := _build_right_dock()
+	right_dock = _build_right_dock()
 	right_dock.anchor_left = 1.0
 	right_dock.anchor_right = 1.0
 	right_dock.offset_left = -190
@@ -171,19 +175,19 @@ func _build_interface() -> void:
 	right_dock.offset_bottom = 520
 	overlay.add_child(right_dock)
 
-	var quick_actions := _build_action_bar()
+	quick_actions = _build_action_bar()
 	quick_actions.anchor_left = 0.0
 	quick_actions.anchor_top = 1.0
 	quick_actions.anchor_right = 0.0
 	quick_actions.anchor_bottom = 1.0
 	quick_actions.offset_left = 18
 	quick_actions.offset_top = -92
-	quick_actions.offset_right = 360
+	quick_actions.offset_right = 660
 	quick_actions.offset_bottom = -18
 	overlay.add_child(quick_actions)
 
 	selected_panel = _build_selected_inspector()
-	selected_panel.anchor_left = 0.30
+	selected_panel.anchor_left = 0.54
 	selected_panel.anchor_top = 1.0
 	selected_panel.anchor_right = 0.98
 	selected_panel.anchor_bottom = 1.0
@@ -209,17 +213,19 @@ func _build_interface() -> void:
 
 	_build_overlay_menus(overlay)
 	ui_ready = true
+	_apply_responsive_layout()
 
 func _build_top_hud() -> Control:
 	var hud := PanelContainer.new()
 	hud.add_theme_stylebox_override("panel", _panel_style(Color(0.03, 0.10, 0.17, 0.88), Color(0.68, 0.91, 1.0, 0.36), 8))
 
-	var row := HBoxContainer.new()
+	var row := HFlowContainer.new()
 	row.add_theme_constant_override("separation", 12)
-	row.add_theme_constant_override("margin_left", 0)
+	row.add_theme_constant_override("v_separation", 6)
 	hud.add_child(row)
 
 	var title_box := VBoxContainer.new()
+	title_box.custom_minimum_size = Vector2(260, 0)
 	title_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(title_box)
 
@@ -257,11 +263,13 @@ func _build_top_hud() -> Control:
 	return hud
 
 func _build_resource_strip() -> Control:
-	var strip := HBoxContainer.new()
+	var strip := HFlowContainer.new()
 	strip.add_theme_constant_override("separation", 8)
+	strip.add_theme_constant_override("v_separation", 6)
 
 	for resource_name in ["food", "wood", "water", "tools", "seed"]:
 		var chip := PanelContainer.new()
+		chip.custom_minimum_size = Vector2(150, 0)
 		chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		chip.add_theme_stylebox_override("panel", _panel_style(Color(0.94, 0.99, 1.0, 0.78), Color(1, 1, 1, 0.58), 8))
 		resource_chips[resource_name] = chip
@@ -305,8 +313,9 @@ func _build_map_surface() -> Control:
 	return panel
 
 func _build_right_dock() -> Control:
-	var dock := VBoxContainer.new()
+	var dock := HFlowContainer.new()
 	dock.add_theme_constant_override("separation", 10)
+	dock.add_theme_constant_override("v_separation", 10)
 
 	var build_button := _make_action_button("Build", ICON_PLUS, Callable(self, "_toggle_build_menu"), Color("#1f7fab"))
 	build_button.custom_minimum_size = Vector2(170, 54)
@@ -325,6 +334,121 @@ func _build_right_dock() -> Control:
 	dock.add_child(move_mode_button)
 
 	return dock
+
+func _apply_responsive_layout() -> void:
+	if top_margin == null or right_dock == null or quick_actions == null or selected_panel == null:
+		return
+
+	var viewport_size := get_viewport_rect().size
+	var compact := viewport_size.x < 980.0
+	var portrait := viewport_size.y > viewport_size.x
+	var margin := 10 if compact or portrait else 18
+	var top_offset := 10 if compact or portrait else 14
+
+	top_margin.add_theme_constant_override("margin_left", margin)
+	top_margin.add_theme_constant_override("margin_top", top_offset)
+	top_margin.add_theme_constant_override("margin_right", margin)
+
+	if compact or portrait:
+		right_dock.anchor_left = 0.0
+		right_dock.anchor_top = 1.0
+		right_dock.anchor_right = 1.0
+		right_dock.anchor_bottom = 1.0
+		right_dock.offset_left = margin
+		right_dock.offset_top = -160
+		right_dock.offset_right = -margin
+		right_dock.offset_bottom = -92
+
+		quick_actions.anchor_left = 0.0
+		quick_actions.anchor_top = 1.0
+		quick_actions.anchor_right = 1.0
+		quick_actions.anchor_bottom = 1.0
+		quick_actions.offset_left = margin
+		quick_actions.offset_top = -86
+		quick_actions.offset_right = -margin
+		quick_actions.offset_bottom = -10
+
+		selected_panel.anchor_left = 0.0
+		selected_panel.anchor_top = 1.0
+		selected_panel.anchor_right = 1.0
+		selected_panel.anchor_bottom = 1.0
+		selected_panel.offset_left = margin
+		selected_panel.offset_top = -350 if portrait else -300
+		selected_panel.offset_right = -margin
+		selected_panel.offset_bottom = -168
+
+		map_status_label.anchor_left = 0.0
+		map_status_label.anchor_right = 1.0
+		map_status_label.offset_left = margin
+		map_status_label.offset_top = 172
+		map_status_label.offset_right = -margin
+		map_status_label.offset_bottom = 208
+	else:
+		right_dock.anchor_left = 1.0
+		right_dock.anchor_top = 0.0
+		right_dock.anchor_right = 1.0
+		right_dock.anchor_bottom = 0.0
+		right_dock.offset_left = -190
+		right_dock.offset_top = 210
+		right_dock.offset_right = -18
+		right_dock.offset_bottom = 520
+
+		quick_actions.anchor_left = 0.0
+		quick_actions.anchor_top = 1.0
+		quick_actions.anchor_right = 0.0
+		quick_actions.anchor_bottom = 1.0
+		quick_actions.offset_left = 18
+		quick_actions.offset_top = -92
+		quick_actions.offset_right = 660
+		quick_actions.offset_bottom = -18
+
+		selected_panel.anchor_left = 0.54
+		selected_panel.anchor_top = 1.0
+		selected_panel.anchor_right = 0.98
+		selected_panel.anchor_bottom = 1.0
+		selected_panel.offset_left = 0
+		selected_panel.offset_top = -230
+		selected_panel.offset_right = -18
+		selected_panel.offset_bottom = -18
+
+		map_status_label.anchor_left = 0.5
+		map_status_label.anchor_right = 0.5
+		map_status_label.offset_left = -260
+		map_status_label.offset_top = 150
+		map_status_label.offset_right = 260
+		map_status_label.offset_bottom = 184
+
+	_layout_overlay_menus(compact or portrait, margin)
+
+func _layout_overlay_menus(compact: bool, margin: int) -> void:
+	if build_menu_panel == null or goals_menu_panel == null or log_menu_panel == null:
+		return
+
+	for panel in [build_menu_panel, goals_menu_panel, log_menu_panel]:
+		panel.anchor_top = 0.0
+		panel.anchor_bottom = 0.0
+		panel.offset_top = 132 if compact else 150
+
+	if compact:
+		for panel in [build_menu_panel, goals_menu_panel, log_menu_panel]:
+			panel.anchor_left = 0.0
+			panel.anchor_right = 1.0
+			panel.offset_left = margin
+			panel.offset_right = -margin
+			panel.offset_bottom = -176
+	else:
+		build_menu_panel.anchor_left = 1.0
+		build_menu_panel.anchor_right = 1.0
+		build_menu_panel.offset_left = -700
+		build_menu_panel.offset_right = -210
+		build_menu_panel.offset_bottom = 650
+
+		for panel in [goals_menu_panel, log_menu_panel]:
+			panel.anchor_left = 1.0
+			panel.anchor_right = 1.0
+			panel.offset_left = -590
+			panel.offset_right = -210
+			panel.offset_bottom = 620 if panel == goals_menu_panel else 650
 
 func _build_overlay_menus(overlay: Control) -> void:
 	build_menu_panel = _make_overlay_panel("Build")
@@ -499,8 +623,9 @@ func _build_selected_inspector() -> Control:
 	selected_detail.add_theme_font_size_override("font_size", 13)
 	header.add_child(selected_detail)
 
-	var info_row := HBoxContainer.new()
+	var info_row := HFlowContainer.new()
 	info_row.add_theme_constant_override("separation", 12)
+	info_row.add_theme_constant_override("v_separation", 6)
 	box.add_child(info_row)
 
 	selected_preview = TextureRect.new()
@@ -536,8 +661,9 @@ func _build_selected_inspector() -> Control:
 	readiness_bar.custom_minimum_size = Vector2(120, 42)
 	info_row.add_child(readiness_bar)
 
-	ability_list = HBoxContainer.new()
+	ability_list = HFlowContainer.new()
 	ability_list.add_theme_constant_override("separation", 8)
+	ability_list.add_theme_constant_override("v_separation", 6)
 	box.add_child(ability_list)
 
 	return panel
@@ -991,8 +1117,9 @@ func _make_building_row(building_id: String) -> Dictionary:
 	var row_panel := PanelContainer.new()
 	row_panel.add_theme_stylebox_override("panel", _panel_style(Color(1, 1, 1, 0.92), Color(0.55, 0.73, 0.84, 0.32), 6))
 
-	var row := HBoxContainer.new()
+	var row := HFlowContainer.new()
 	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("v_separation", 6)
 	row_panel.add_child(row)
 
 	var icon := TextureRect.new()
