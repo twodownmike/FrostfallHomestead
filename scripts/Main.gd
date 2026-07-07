@@ -92,6 +92,8 @@ var world_grid: Control
 var build_menu_panel: PanelContainer
 var goals_menu_panel: PanelContainer
 var log_menu_panel: PanelContainer
+var placement_layer: Control
+var placement_preview: TextureRect
 var selected_panel: Control
 var move_mode_button: Button
 var map_status_label: Label
@@ -328,11 +330,12 @@ func _build_overlay_menus(overlay: Control) -> void:
 	build_menu_panel = _make_overlay_panel("Build")
 	build_menu_panel.anchor_left = 1.0
 	build_menu_panel.anchor_right = 1.0
-	build_menu_panel.offset_left = -660
+	build_menu_panel.offset_left = -700
 	build_menu_panel.offset_top = 150
 	build_menu_panel.offset_right = -210
 	build_menu_panel.offset_bottom = 650
 	build_menu_panel.visible = false
+	build_menu_panel.z_index = 20
 	overlay.add_child(build_menu_panel)
 
 	var build_box: VBoxContainer = build_menu_panel.get_meta("content")
@@ -349,6 +352,7 @@ func _build_overlay_menus(overlay: Control) -> void:
 	goals_menu_panel.offset_right = -210
 	goals_menu_panel.offset_bottom = 620
 	goals_menu_panel.visible = false
+	goals_menu_panel.z_index = 20
 	overlay.add_child(goals_menu_panel)
 	objective_list = VBoxContainer.new()
 	objective_list.add_theme_constant_override("separation", 6)
@@ -363,6 +367,7 @@ func _build_overlay_menus(overlay: Control) -> void:
 	log_menu_panel.offset_right = -210
 	log_menu_panel.offset_bottom = 650
 	log_menu_panel.visible = false
+	log_menu_panel.z_index = 20
 	overlay.add_child(log_menu_panel)
 	event_list = VBoxContainer.new()
 	event_list.add_theme_constant_override("separation", 6)
@@ -371,7 +376,7 @@ func _build_overlay_menus(overlay: Control) -> void:
 
 func _make_overlay_panel(title_text: String) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.93, 0.985, 1.0, 0.92), Color(1, 1, 1, 0.62), 8))
+	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.95, 0.985, 1.0, 0.99), Color(1, 1, 1, 0.78), 8))
 
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
@@ -387,6 +392,9 @@ func _make_overlay_panel(title_text: String) -> PanelContainer:
 	return panel
 
 func _toggle_build_menu() -> void:
+	if placing_building_id != "":
+		_cancel_build_placement()
+		return
 	_toggle_overlay(build_menu_panel)
 
 func _toggle_goals_menu() -> void:
@@ -396,10 +404,18 @@ func _toggle_log_menu() -> void:
 	_toggle_overlay(log_menu_panel)
 
 func _toggle_overlay(panel: Control) -> void:
+	var will_show := not panel.visible
+	if will_show:
+		if placing_building_id != "":
+			_cancel_build_placement()
+		if move_mode:
+			_cancel_move_mode()
 	for menu in [build_menu_panel, goals_menu_panel, log_menu_panel]:
 		if menu != panel:
 			menu.visible = false
-	panel.visible = not panel.visible
+	panel.visible = will_show
+	if selected_panel != null:
+		selected_panel.visible = not panel.visible
 
 func _build_world_panel() -> Control:
 	var panel := PanelContainer.new()
@@ -613,6 +629,8 @@ func _build_world_grid(world_grid: Control) -> void:
 	building_badges.clear()
 	map_tiles.clear()
 	map_detail_buttons.clear()
+	placement_layer = null
+	placement_preview = null
 	var terrain := _make_terrain()
 
 	for y in range(WORLD_ROWS):
@@ -638,6 +656,8 @@ func _build_world_grid(world_grid: Control) -> void:
 
 	for building_id in building_positions.keys():
 		_add_building_sprite(world_grid, building_id)
+
+	_add_placement_layer(world_grid)
 
 func _add_map_detail(board: Control, detail: Dictionary) -> void:
 	var cell: Vector2i = detail["cell"]
@@ -691,6 +711,25 @@ func _add_building_sprite(board: Control, building_id: String) -> void:
 	badge.z_index = 4
 	building_badges[building_id] = badge
 	board.add_child(badge)
+
+func _add_placement_layer(board: Control) -> void:
+	placement_layer = Control.new()
+	placement_layer.position = Vector2.ZERO
+	placement_layer.custom_minimum_size = Vector2(WORLD_COLUMNS * TILE_PIXEL, WORLD_ROWS * TILE_PIXEL)
+	placement_layer.size = placement_layer.custom_minimum_size
+	placement_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	placement_layer.visible = false
+	placement_layer.z_index = 12
+	placement_layer.gui_input.connect(_handle_placement_layer_input)
+	board.add_child(placement_layer)
+
+	placement_preview = TextureRect.new()
+	placement_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	placement_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	placement_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	placement_preview.modulate = Color(0.65, 1.0, 1.0, 0.72)
+	placement_preview.visible = false
+	placement_layer.add_child(placement_preview)
 
 func _texture_draw_size(texture: Texture2D, scale: float) -> Vector2:
 	return Vector2(texture.get_width(), texture.get_height()) * scale
@@ -756,6 +795,8 @@ func _select_building(building_id: String) -> void:
 func _toggle_move_mode() -> void:
 	placing_building_id = ""
 	move_mode = not move_mode
+	if move_mode:
+		_hide_overlay_menus()
 	_set_move_button_text("Move: On" if move_mode else "Move")
 	_set_status("Move mode: tap an open snow tile to place %s." % game.buildings[selected_building]["name"] if move_mode else "Tap buildings, scout landmarks, or open Build.")
 	_set_map_tiles_enabled(move_mode)
@@ -796,7 +837,10 @@ func _begin_build_placement(building_id: String) -> void:
 	move_mode = false
 	_set_move_button_text("Move")
 	placing_building_id = building_id
-	_set_status("Build mode: tap an open snow tile to place %s." % game.building_name(building_id))
+	build_menu_panel.visible = false
+	if selected_panel != null:
+		selected_panel.visible = true
+	_set_status("Build mode: tap an open plot to place %s. Tap Build to cancel." % game.building_name(building_id))
 	_set_map_tiles_enabled(true)
 
 func _place_pending_building(cell: Vector2i) -> void:
@@ -816,6 +860,24 @@ func _place_pending_building(cell: Vector2i) -> void:
 
 	placing_building_id = ""
 	_set_map_tiles_enabled(false)
+
+func _cancel_build_placement() -> void:
+	var building_name := game.building_name(placing_building_id)
+	placing_building_id = ""
+	_set_map_tiles_enabled(false)
+	_set_status("Canceled %s placement." % building_name)
+
+func _cancel_move_mode() -> void:
+	move_mode = false
+	_set_move_button_text("Move")
+	_set_map_tiles_enabled(false)
+
+func _hide_overlay_menus() -> void:
+	for menu in [build_menu_panel, goals_menu_panel, log_menu_panel]:
+		if menu != null:
+			menu.visible = false
+	if selected_panel != null:
+		selected_panel.visible = true
 
 func _handle_map_detail_pressed(detail: Dictionary) -> void:
 	if move_mode or placing_building_id != "":
@@ -843,9 +905,50 @@ func _set_map_tiles_enabled(enabled: bool) -> void:
 		if is_instance_valid(tile):
 			tile.disabled = not enabled
 			_style_map_tile_for_mode(tile, enabled)
+	for detail_button in map_detail_buttons:
+		if is_instance_valid(detail_button):
+			detail_button.mouse_filter = Control.MOUSE_FILTER_IGNORE if enabled else Control.MOUSE_FILTER_STOP
+	if placement_layer != null and is_instance_valid(placement_layer):
+		placement_layer.visible = enabled
+		placement_layer.mouse_filter = Control.MOUSE_FILTER_STOP if enabled else Control.MOUSE_FILTER_IGNORE
+	if placement_preview != null and is_instance_valid(placement_preview):
+		placement_preview.visible = enabled and placing_building_id != ""
+		if placing_building_id != "":
+			_update_placement_preview(placement_layer.get_local_mouse_position())
 
 func _placement_active() -> bool:
 	return move_mode or placing_building_id != ""
+
+func _handle_placement_layer_input(event: InputEvent) -> void:
+	if not _placement_active():
+		return
+	if event is InputEventMouseMotion:
+		var motion := event as InputEventMouseMotion
+		_update_placement_preview(motion.position)
+	elif event is InputEventMouseButton:
+		var mouse_button := event as InputEventMouseButton
+		if mouse_button.button_index == MOUSE_BUTTON_LEFT and mouse_button.pressed:
+			_handle_map_cell_pressed(_cell_from_map_position(mouse_button.position))
+
+func _update_placement_preview(local_position: Vector2) -> void:
+	if placement_preview == null or not is_instance_valid(placement_preview) or placing_building_id == "":
+		return
+	var cell := _cell_from_map_position(local_position)
+	var texture := _blueprint_texture(placing_building_id)
+	var preview_size := _texture_draw_size(texture, BUILDING_TEXTURE_SCALE)
+	var center := Vector2(cell.x * TILE_PIXEL + TILE_PIXEL * 0.5, cell.y * TILE_PIXEL + TILE_PIXEL * 0.5)
+	placement_preview.texture = texture
+	placement_preview.custom_minimum_size = preview_size
+	placement_preview.size = preview_size
+	placement_preview.position = center - preview_size * 0.5
+	placement_preview.modulate = Color(1.0, 0.48, 0.42, 0.66) if _is_occupied(cell) else Color(0.65, 1.0, 1.0, 0.72)
+	placement_preview.visible = true
+
+func _cell_from_map_position(local_position: Vector2) -> Vector2i:
+	return Vector2i(
+		clampi(int(floor(local_position.x / TILE_PIXEL)), 0, WORLD_COLUMNS - 1),
+		clampi(int(floor(local_position.y / TILE_PIXEL)), 0, WORLD_ROWS - 1)
+	)
 
 func _style_map_tile_for_mode(tile: TextureButton, enabled: bool) -> void:
 	if not tile.has_meta("base_modulate"):
@@ -886,7 +989,7 @@ func _rebuild_world_grid() -> void:
 
 func _make_building_row(building_id: String) -> Dictionary:
 	var row_panel := PanelContainer.new()
-	row_panel.add_theme_stylebox_override("panel", _panel_style(Color(1, 1, 1, 0.76), Color(0.55, 0.73, 0.84, 0.24), 6))
+	row_panel.add_theme_stylebox_override("panel", _panel_style(Color(1, 1, 1, 0.92), Color(0.55, 0.73, 0.84, 0.32), 6))
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
@@ -915,7 +1018,9 @@ func _make_building_row(building_id: String) -> Dictionary:
 	var upgrade := _make_icon_button(ICON_WRENCH, func() -> void: game.upgrade(building_id))
 	row.add_child(upgrade)
 
-	var build := _make_icon_button(ICON_PLUS, _begin_build_placement.bind(building_id))
+	var build := _make_action_button("Place", ICON_PLUS, _begin_build_placement.bind(building_id), Color("#1f7fab"))
+	build.custom_minimum_size = Vector2(94, 42)
+	build.size_flags_horizontal = Control.SIZE_SHRINK_END
 	build.tooltip_text = "Build %s" % game.building_name(building_id)
 	row.add_child(build)
 
