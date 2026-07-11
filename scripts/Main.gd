@@ -123,6 +123,7 @@ var world_rebuild_queued := false
 var move_mode := false
 var placing_building_id := ""
 var ui_ready := false
+var compact_layout := false
 
 func _ready() -> void:
 	randomize()
@@ -344,12 +345,13 @@ func _apply_responsive_layout() -> void:
 	var portrait := viewport_size.y > viewport_size.x
 	var margin := 10 if compact or portrait else 18
 	var top_offset := 10 if compact or portrait else 14
+	compact_layout = compact or portrait
 
 	top_margin.add_theme_constant_override("margin_left", margin)
 	top_margin.add_theme_constant_override("margin_top", top_offset)
 	top_margin.add_theme_constant_override("margin_right", margin)
 
-	if compact or portrait:
+	if compact_layout:
 		right_dock.anchor_left = 0.0
 		right_dock.anchor_top = 1.0
 		right_dock.anchor_right = 1.0
@@ -373,7 +375,7 @@ func _apply_responsive_layout() -> void:
 		selected_panel.anchor_right = 1.0
 		selected_panel.anchor_bottom = 1.0
 		selected_panel.offset_left = margin
-		selected_panel.offset_top = -350 if portrait else -300
+		selected_panel.offset_top = -430 if portrait else -360
 		selected_panel.offset_right = -margin
 		selected_panel.offset_bottom = -168
 
@@ -407,7 +409,7 @@ func _apply_responsive_layout() -> void:
 		selected_panel.anchor_right = 0.98
 		selected_panel.anchor_bottom = 1.0
 		selected_panel.offset_left = 0
-		selected_panel.offset_top = -230
+		selected_panel.offset_top = -300
 		selected_panel.offset_right = -18
 		selected_panel.offset_bottom = -18
 
@@ -418,7 +420,7 @@ func _apply_responsive_layout() -> void:
 		map_status_label.offset_right = 260
 		map_status_label.offset_bottom = 184
 
-	_layout_overlay_menus(compact or portrait, margin)
+	_layout_overlay_menus(compact_layout, margin)
 
 func _layout_overlay_menus(compact: bool, margin: int) -> void:
 	if build_menu_panel == null or goals_menu_panel == null or log_menu_panel == null:
@@ -602,10 +604,11 @@ func _build_world_panel() -> Control:
 
 func _build_selected_inspector() -> Control:
 	var panel := PanelContainer.new()
+	panel.clip_contents = true
 	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.02, 0.08, 0.13, 0.84), Color(0.77, 0.94, 1.0, 0.34), 8))
 
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
+	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
 
 	var header := HBoxContainer.new()
@@ -615,12 +618,12 @@ func _build_selected_inspector() -> Control:
 	selected_title = Label.new()
 	selected_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	selected_title.add_theme_color_override("font_color", Color("#f8fcff"))
-	selected_title.add_theme_font_size_override("font_size", 20)
+	selected_title.add_theme_font_size_override("font_size", 18)
 	header.add_child(selected_title)
 
 	selected_detail = Label.new()
 	selected_detail.add_theme_color_override("font_color", Color("#bde3f3"))
-	selected_detail.add_theme_font_size_override("font_size", 13)
+	selected_detail.add_theme_font_size_override("font_size", 12)
 	header.add_child(selected_detail)
 
 	var info_row := HFlowContainer.new()
@@ -629,12 +632,16 @@ func _build_selected_inspector() -> Control:
 	box.add_child(info_row)
 
 	selected_preview = TextureRect.new()
-	selected_preview.custom_minimum_size = Vector2(96, 72)
-	selected_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	selected_preview.custom_minimum_size = Vector2(82, 62)
+	selected_preview.size = Vector2(82, 62)
+	selected_preview.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 	selected_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	selected_preview.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	selected_preview.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	info_row.add_child(selected_preview)
 
 	var text_stack := VBoxContainer.new()
+	text_stack.custom_minimum_size = Vector2(210, 0)
 	text_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info_row.add_child(text_stack)
 
@@ -655,10 +662,10 @@ func _build_selected_inspector() -> Control:
 	text_stack.add_child(selected_risk)
 
 	condition_bar = _make_named_meter("Condition", Color("#75d4d0"))
-	condition_bar.custom_minimum_size = Vector2(120, 42)
+	condition_bar.custom_minimum_size = Vector2(104, 38)
 	info_row.add_child(condition_bar)
 	readiness_bar = _make_named_meter("Order Ready", Color("#7cc8ff"))
-	readiness_bar.custom_minimum_size = Vector2(120, 42)
+	readiness_bar.custom_minimum_size = Vector2(104, 38)
 	info_row.add_child(readiness_bar)
 
 	ability_list = HFlowContainer.new()
@@ -1322,7 +1329,8 @@ func _rebuild_ability_buttons() -> void:
 			func() -> void: game.add_log(game.building_status_text(selected_building)),
 			Color("#425f75")
 		)
-		status_button.custom_minimum_size = Vector2(220, 58)
+		status_button.custom_minimum_size = Vector2(190, 50)
+		status_button.add_theme_font_size_override("font_size", 13)
 		status_button.disabled = true
 		ability_list.add_child(status_button)
 		return
@@ -1335,7 +1343,8 @@ func _rebuild_ability_buttons() -> void:
 			_perform_selected_action.bind(action_id),
 			Color("#1f6f94")
 		)
-		button.custom_minimum_size = Vector2(160, 58)
+		button.custom_minimum_size = Vector2(145 if compact_layout else 156, 50)
+		button.add_theme_font_size_override("font_size", 13)
 		button.disabled = game.game_over or not game.can_perform_building_action(selected_building, action_id)
 		ability_list.add_child(button)
 
@@ -1346,7 +1355,8 @@ func _rebuild_ability_buttons() -> void:
 		func() -> void: game.upgrade(selected_building),
 		Color("#a36a25")
 	)
-	upgrade.custom_minimum_size = Vector2(160, 58)
+	upgrade.custom_minimum_size = Vector2(145 if compact_layout else 156, 50)
+	upgrade.add_theme_font_size_override("font_size", 13)
 	upgrade.disabled = game.game_over or not game.can_upgrade(selected_building)
 	ability_list.add_child(upgrade)
 
