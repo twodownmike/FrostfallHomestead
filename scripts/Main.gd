@@ -52,6 +52,7 @@ const TERRAIN_PINE_ID := 10
 const TERRAIN_LOGS_ID := 70
 const BUILDING_TEXTURE_SCALE := 0.54
 const DETAIL_TEXTURE_SCALE := 0.68
+const KEYBOARD_PAN_STEP := 72
 const BUILDING_SPRITES := {
 	"cabin": [SPRITE_CITY_HALL_L1, SPRITE_CITY_HALL_L2, SPRITE_CITY_HALL_L3],
 	"woodlot": [SPRITE_SAWMILL_L1, SPRITE_SAWMILL_L2, SPRITE_SAWMILL_L3],
@@ -89,6 +90,7 @@ var building_positions := {
 var event_list: VBoxContainer
 var objective_list: VBoxContainer
 var world_grid: Control
+var map_scroll: ScrollContainer
 var build_menu_panel: PanelContainer
 var goals_menu_panel: PanelContainer
 var log_menu_panel: PanelContainer
@@ -141,7 +143,7 @@ func _process(delta: float) -> void:
 		day_progress.value = 20.0 - game.seconds_until_day
 
 func _input(event: InputEvent) -> void:
-	if placing_building_id == "" or not event is InputEventKey:
+	if not event is InputEventKey:
 		return
 	var key_event := event as InputEventKey
 	if not key_event.pressed:
@@ -158,18 +160,23 @@ func _input(event: InputEvent) -> void:
 		KEY_D, KEY_RIGHT:
 			direction = Vector2i.RIGHT
 
-	if direction != Vector2i.ZERO:
+	if placing_building_id != "" and direction != Vector2i.ZERO:
 		placement_cell = Vector2i(
 			clampi(placement_cell.x + direction.x, 0, WORLD_COLUMNS - 1),
 			clampi(placement_cell.y + direction.y, 0, WORLD_ROWS - 1)
 		)
 		_update_placement_preview_for_cell(placement_cell)
 		get_viewport().set_input_as_handled()
-	elif key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER or key_event.keycode == KEY_SPACE:
+	elif placing_building_id != "" and (key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER or key_event.keycode == KEY_SPACE):
 		_handle_map_cell_pressed(placement_cell)
 		get_viewport().set_input_as_handled()
-	elif key_event.keycode == KEY_ESCAPE:
+	elif placing_building_id != "" and key_event.keycode == KEY_ESCAPE:
 		_cancel_build_placement()
+		get_viewport().set_input_as_handled()
+	elif direction != Vector2i.ZERO and map_scroll != null and is_instance_valid(map_scroll):
+		var pan_step := KEYBOARD_PAN_STEP * (3 if key_event.shift_pressed else 1)
+		map_scroll.scroll_horizontal += direction.x * pan_step
+		map_scroll.scroll_vertical += direction.y * pan_step
 		get_viewport().set_input_as_handled()
 
 func _build_interface() -> void:
@@ -242,7 +249,7 @@ func _build_interface() -> void:
 	map_status_label.add_theme_color_override("font_color", Color("#fff1c4"))
 	map_status_label.add_theme_font_size_override("font_size", 14)
 	map_status_label.add_theme_stylebox_override("normal", _panel_style(Color(0.02, 0.08, 0.12, 0.72), Color(1, 1, 1, 0.18), 8))
-	map_status_label.text = "Tap buildings, scout landmarks, or open Build."
+	map_status_label.text = "Drag or use WASD/arrows to explore. Tap buildings, landmarks, or Build."
 	overlay.add_child(map_status_label)
 
 	_build_overlay_menus(overlay)
@@ -330,14 +337,14 @@ func _build_resource_strip() -> Control:
 func _build_map_surface() -> Control:
 	var panel := Control.new()
 
-	var scroll := ScrollContainer.new()
-	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	panel.add_child(scroll)
+	map_scroll = ScrollContainer.new()
+	map_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	map_scroll.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	panel.add_child(map_scroll)
 
 	world_grid = Control.new()
 	world_grid.custom_minimum_size = Vector2(WORLD_COLUMNS * TILE_PIXEL, WORLD_ROWS * TILE_PIXEL)
-	scroll.add_child(world_grid)
+	map_scroll.add_child(world_grid)
 	_build_world_grid(world_grid)
 
 	var snow: Control = SnowOverlayScript.new()
@@ -964,7 +971,7 @@ func _toggle_move_mode() -> void:
 	if move_mode:
 		_hide_overlay_menus()
 	_set_move_button_text("Move: On" if move_mode else "Move")
-	_set_status("Move mode: tap an open snow tile to place %s." % game.buildings[selected_building]["name"] if move_mode else "Tap buildings, scout landmarks, or open Build.")
+	_set_status("Move mode: tap an open snow tile to place %s." % game.buildings[selected_building]["name"] if move_mode else "Drag or use WASD/arrows to explore. Tap buildings, landmarks, or Build.")
 	_set_map_tiles_enabled(move_mode)
 
 func _handle_map_cell_pressed(cell: Vector2i) -> void:
