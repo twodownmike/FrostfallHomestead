@@ -1061,7 +1061,19 @@ func _handle_placement_layer_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton:
 		var mouse_button := event as InputEventMouseButton
 		if mouse_button.button_index == MOUSE_BUTTON_LEFT and mouse_button.pressed:
-			_handle_map_cell_pressed(_cell_from_map_position(mouse_button.position))
+			_commit_map_press(mouse_button.position)
+	elif event is InputEventScreenDrag:
+		var screen_drag := event as InputEventScreenDrag
+		_update_placement_preview(screen_drag.position)
+	elif event is InputEventScreenTouch:
+		var screen_touch := event as InputEventScreenTouch
+		if screen_touch.pressed:
+			_commit_map_press(screen_touch.position)
+
+func _commit_map_press(local_position: Vector2) -> void:
+	_handle_map_cell_pressed(_cell_from_map_position(local_position))
+	if placement_layer != null and is_instance_valid(placement_layer):
+		placement_layer.accept_event()
 
 func _update_placement_preview(local_position: Vector2) -> void:
 	if placement_preview == null or not is_instance_valid(placement_preview) or placing_building_id == "":
