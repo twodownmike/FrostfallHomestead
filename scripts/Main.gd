@@ -122,6 +122,7 @@ var ability_rebuild_queued := false
 var world_rebuild_queued := false
 var move_mode := false
 var placing_building_id := ""
+var placement_cell := Vector2i.ZERO
 var ui_ready := false
 var compact_layout := false
 
@@ -138,6 +139,38 @@ func _process(delta: float) -> void:
 	game.tick(delta)
 	if day_progress != null:
 		day_progress.value = 20.0 - game.seconds_until_day
+
+func _input(event: InputEvent) -> void:
+	if placing_building_id == "" or not event is InputEventKey:
+		return
+	var key_event := event as InputEventKey
+	if not key_event.pressed:
+		return
+
+	var direction := Vector2i.ZERO
+	match key_event.physical_keycode:
+		KEY_W, KEY_UP:
+			direction = Vector2i.UP
+		KEY_S, KEY_DOWN:
+			direction = Vector2i.DOWN
+		KEY_A, KEY_LEFT:
+			direction = Vector2i.LEFT
+		KEY_D, KEY_RIGHT:
+			direction = Vector2i.RIGHT
+
+	if direction != Vector2i.ZERO:
+		placement_cell = Vector2i(
+			clampi(placement_cell.x + direction.x, 0, WORLD_COLUMNS - 1),
+			clampi(placement_cell.y + direction.y, 0, WORLD_ROWS - 1)
+		)
+		_update_placement_preview_for_cell(placement_cell)
+		get_viewport().set_input_as_handled()
+	elif key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER or key_event.keycode == KEY_SPACE:
+		_handle_map_cell_pressed(placement_cell)
+		get_viewport().set_input_as_handled()
+	elif key_event.keycode == KEY_ESCAPE:
+		_cancel_build_placement()
+		get_viewport().set_input_as_handled()
 
 func _build_interface() -> void:
 	add_theme_font_override("font", FONT_FUTURE)
@@ -970,10 +1003,11 @@ func _begin_build_placement(building_id: String) -> void:
 	move_mode = false
 	_set_move_button_text("Move")
 	placing_building_id = building_id
+	placement_cell = _initial_placement_cell()
 	build_menu_panel.visible = false
 	if selected_panel != null:
 		selected_panel.visible = true
-	_set_status("Build mode: tap an open plot to place %s. Tap Build to cancel." % game.building_name(building_id))
+	_set_status("Place %s: click a plot, or use WASD/arrows + Enter. Esc cancels." % game.building_name(building_id))
 	_set_map_tiles_enabled(true)
 
 func _place_pending_building(cell: Vector2i) -> void:
@@ -1047,7 +1081,7 @@ func _set_map_tiles_enabled(enabled: bool) -> void:
 	if placement_preview != null and is_instance_valid(placement_preview):
 		placement_preview.visible = enabled and placing_building_id != ""
 		if placing_building_id != "":
-			_update_placement_preview(placement_layer.get_local_mouse_position())
+			_update_placement_preview_for_cell(placement_cell)
 
 func _placement_active() -> bool:
 	return move_mode or placing_building_id != ""
@@ -1079,6 +1113,12 @@ func _update_placement_preview(local_position: Vector2) -> void:
 	if placement_preview == null or not is_instance_valid(placement_preview) or placing_building_id == "":
 		return
 	var cell := _cell_from_map_position(local_position)
+	placement_cell = cell
+	_update_placement_preview_for_cell(cell)
+
+func _update_placement_preview_for_cell(cell: Vector2i) -> void:
+	if placement_preview == null or not is_instance_valid(placement_preview) or placing_building_id == "":
+		return
 	var texture := _blueprint_texture(placing_building_id)
 	var preview_size := _texture_draw_size(texture, BUILDING_TEXTURE_SCALE)
 	var center := Vector2(cell.x * TILE_PIXEL + TILE_PIXEL * 0.5, cell.y * TILE_PIXEL + TILE_PIXEL * 0.5)
@@ -1088,6 +1128,14 @@ func _update_placement_preview(local_position: Vector2) -> void:
 	placement_preview.position = center - preview_size * 0.5
 	placement_preview.modulate = Color(1.0, 0.48, 0.42, 0.66) if _is_occupied(cell) else Color(0.65, 1.0, 1.0, 0.72)
 	placement_preview.visible = true
+
+func _initial_placement_cell() -> Vector2i:
+	var origin: Vector2i = building_positions.get(selected_building, Vector2i(WORLD_COLUMNS / 2, WORLD_ROWS / 2))
+	for offset in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]:
+		var candidate: Vector2i = origin + offset
+		if candidate.x >= 0 and candidate.x < WORLD_COLUMNS and candidate.y >= 0 and candidate.y < WORLD_ROWS and not _is_occupied(candidate):
+			return candidate
+	return Vector2i(clampi(origin.x, 0, WORLD_COLUMNS - 1), clampi(origin.y, 0, WORLD_ROWS - 1))
 
 func _cell_from_map_position(local_position: Vector2) -> Vector2i:
 	return Vector2i(
