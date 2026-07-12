@@ -16,6 +16,7 @@ const TERRAIN_CLEARING := preload("res://assets/map_details/tile_clearing.png")
 const TERRAIN_PINE := preload("res://assets/map_details/tile_pine.png")
 const TERRAIN_LOGS := preload("res://assets/map_details/tile_logs.png")
 
+const SPRITE_HOMESTEAD_L1 := preload("res://assets/building_upgrades/homestead_l1.png")
 const SPRITE_CITY_HALL_L1 := preload("res://assets/building_upgrades/city_hall_l1.png")
 const SPRITE_CITY_HALL_L2 := preload("res://assets/building_upgrades/city_hall_l2.png")
 const SPRITE_CITY_HALL_L3 := preload("res://assets/building_upgrades/city_hall_l3.png")
@@ -78,7 +79,7 @@ const DETAIL_TEXTURE_SCALE := 0.66
 const KEYBOARD_PAN_STEP := 80
 
 const BUILDING_SPRITES := {
-	"cabin": [SPRITE_CITY_HALL_L1, SPRITE_CITY_HALL_L2, SPRITE_CITY_HALL_L3],
+	"cabin": [SPRITE_HOMESTEAD_L1, SPRITE_CITY_HALL_L2, SPRITE_CITY_HALL_L3],
 	"woodlot": [SPRITE_SAWMILL_L1, SPRITE_SAWMILL_L2, SPRITE_SAWMILL_L3],
 	"garden": [SPRITE_HUNTERS_LODGE_L1, SPRITE_HUNTERS_LODGE_L2, SPRITE_HUNTERS_LODGE_L3],
 	"well": [SPRITE_SHELTERS_L1, SPRITE_SHELTERS_L2, SPRITE_SHELTERS_L3],
