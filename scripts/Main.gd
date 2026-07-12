@@ -1,204 +1,662 @@
 extends Control
 
-## Frostfall Homestead — Whiteout Survival-style mobile city UI.
+## Frostfall Homestead — Whiteout Survival-style mobile city client.
+## Map-first chrome: slim top bar, big bottom dock, tap-to-inspect sheets.
 
 const GameStateScript := preload("res://scripts/GameState.gd")
 const BackgroundScript := preload("res://scripts/PolishedBackground.gd")
 const SnowOverlayScript := preload("res://scripts/SnowOverlay.gd")
 const FloatingTextScript := preload("res://scripts/FloatingText.gd")
-const FONT_FUTURE := preload("res://assets/kenney_ui_pack/Font/Kenney Future.ttf")
+const FONT := preload("res://assets/kenney_ui_pack/Font/Kenney Future.ttf")
 
 const TERRAIN_SNOW := preload("res://assets/map_details/tile_snow.png")
 const TERRAIN_SNOW_ROUGH := preload("res://assets/map_details/tile_snow_rough.png")
-const TERRAIN_ROAD_HORIZONTAL := preload("res://assets/map_details/tile_road_horizontal.png")
-const TERRAIN_ROAD_VERTICAL := preload("res://assets/map_details/tile_road_vertical.png")
+const TERRAIN_ROAD_H := preload("res://assets/map_details/tile_road_horizontal.png")
+const TERRAIN_ROAD_V := preload("res://assets/map_details/tile_road_vertical.png")
 const TERRAIN_CLEARING := preload("res://assets/map_details/tile_clearing.png")
 const TERRAIN_PINE := preload("res://assets/map_details/tile_pine.png")
 const TERRAIN_LOGS := preload("res://assets/map_details/tile_logs.png")
 
-const SPRITE_HOMESTEAD_L1 := preload("res://assets/building_upgrades/homestead_l1.png")
-const SPRITE_CITY_HALL_L1 := preload("res://assets/building_upgrades/city_hall_l1.png")
-const SPRITE_CITY_HALL_L2 := preload("res://assets/building_upgrades/city_hall_l2.png")
-const SPRITE_CITY_HALL_L3 := preload("res://assets/building_upgrades/city_hall_l3.png")
-const SPRITE_HUNTERS_LODGE_L1 := preload("res://assets/building_upgrades/hunters_lodge_l1.png")
-const SPRITE_HUNTERS_LODGE_L2 := preload("res://assets/building_upgrades/hunters_lodge_l2.png")
-const SPRITE_HUNTERS_LODGE_L3 := preload("res://assets/building_upgrades/hunters_lodge_l3.png")
-const SPRITE_SAWMILL_L1 := preload("res://assets/building_upgrades/sawmill_l1.png")
-const SPRITE_SAWMILL_L2 := preload("res://assets/building_upgrades/sawmill_l2.png")
-const SPRITE_SAWMILL_L3 := preload("res://assets/building_upgrades/sawmill_l3.png")
-const SPRITE_COAL_MINE_L1 := preload("res://assets/building_upgrades/coal_mine_l1.png")
-const SPRITE_COAL_MINE_L2 := preload("res://assets/building_upgrades/coal_mine_l2.png")
-const SPRITE_COAL_MINE_L3 := preload("res://assets/building_upgrades/coal_mine_l3.png")
-const SPRITE_SHELTERS_L1 := preload("res://assets/building_upgrades/shelters_l1.png")
-const SPRITE_SHELTERS_L2 := preload("res://assets/building_upgrades/shelters_l2.png")
-const SPRITE_SHELTERS_L3 := preload("res://assets/building_upgrades/shelters_l3.png")
+const SPR_HOME_L1 := preload("res://assets/building_upgrades/homestead_l1.png")
+const SPR_HALL_L1 := preload("res://assets/building_upgrades/city_hall_l1.png")
+const SPR_HALL_L2 := preload("res://assets/building_upgrades/city_hall_l2.png")
+const SPR_HALL_L3 := preload("res://assets/building_upgrades/city_hall_l3.png")
+const SPR_LODGE_L1 := preload("res://assets/building_upgrades/hunters_lodge_l1.png")
+const SPR_LODGE_L2 := preload("res://assets/building_upgrades/hunters_lodge_l2.png")
+const SPR_LODGE_L3 := preload("res://assets/building_upgrades/hunters_lodge_l3.png")
+const SPR_SAW_L1 := preload("res://assets/building_upgrades/sawmill_l1.png")
+const SPR_SAW_L2 := preload("res://assets/building_upgrades/sawmill_l2.png")
+const SPR_SAW_L3 := preload("res://assets/building_upgrades/sawmill_l3.png")
+const SPR_MINE_L1 := preload("res://assets/building_upgrades/coal_mine_l1.png")
+const SPR_MINE_L2 := preload("res://assets/building_upgrades/coal_mine_l2.png")
+const SPR_MINE_L3 := preload("res://assets/building_upgrades/coal_mine_l3.png")
+const SPR_SHEL_L1 := preload("res://assets/building_upgrades/shelters_l1.png")
+const SPR_SHEL_L2 := preload("res://assets/building_upgrades/shelters_l2.png")
+const SPR_SHEL_L3 := preload("res://assets/building_upgrades/shelters_l3.png")
 
-const DETAIL_TIMBER := preload("res://assets/map_details/timber_forest_l1.png")
-const DETAIL_STONE := preload("res://assets/map_details/stone_rocks_l1.png")
-const DETAIL_HUNTING := preload("res://assets/map_details/hunting_tracks_l1.png")
-const DETAIL_CAMP := preload("res://assets/map_details/camp_poi.png")
-const DETAIL_CAVE := preload("res://assets/map_details/ice_cave.png")
-const DETAIL_OUTPOST := preload("res://assets/map_details/outpost.png")
-const DETAIL_QUARRY := preload("res://assets/map_details/quarry_l3.png")
-const DETAIL_ORE := preload("res://assets/map_details/ore_mine_l2.png")
-const DETAIL_ROCKS := preload("res://assets/map_details/stone_rocks_l1.png")
-const DETAIL_BLIND := preload("res://assets/map_details/hunting_blind_l3.png")
-const DETAIL_CARCASS := preload("res://assets/map_details/hunting_carcass_l2.png")
-const DETAIL_TIMBER_CAMP := preload("res://assets/map_details/timber_camp_l2.png")
-const DETAIL_SAWMILL := preload("res://assets/map_details/timber_sawmill_l3.png")
+const DET_TIMBER := preload("res://assets/map_details/timber_forest_l1.png")
+const DET_STONE := preload("res://assets/map_details/stone_rocks_l1.png")
+const DET_HUNT := preload("res://assets/map_details/hunting_tracks_l1.png")
+const DET_CAMP := preload("res://assets/map_details/camp_poi.png")
+const DET_CAVE := preload("res://assets/map_details/ice_cave.png")
+const DET_OUTPOST := preload("res://assets/map_details/outpost.png")
+const DET_QUARRY := preload("res://assets/map_details/quarry_l3.png")
+const DET_ORE := preload("res://assets/map_details/ore_mine_l2.png")
+const DET_ROCKS := preload("res://assets/map_details/stone_rocks_l1.png")
+const DET_BLIND := preload("res://assets/map_details/hunting_blind_l3.png")
+const DET_CARCASS := preload("res://assets/map_details/hunting_carcass_l2.png")
+const DET_CAMP2 := preload("res://assets/map_details/timber_camp_l2.png")
+const DET_SAW := preload("res://assets/map_details/timber_sawmill_l3.png")
 
-const ICON_HOME := preload("res://assets/kenney_game_icons/PNG/White/2x/home.png")
-const ICON_WRENCH := preload("res://assets/kenney_game_icons/PNG/White/2x/wrench.png")
-const ICON_TARGET := preload("res://assets/kenney_game_icons/PNG/White/2x/target.png")
-const ICON_PLUS := preload("res://assets/kenney_game_icons/PNG/White/2x/plus.png")
-const ICON_MINUS := preload("res://assets/kenney_game_icons/PNG/White/2x/minus.png")
-const ICON_GEAR := preload("res://assets/kenney_game_icons/PNG/White/2x/gear.png")
-const ICON_STAR := preload("res://assets/kenney_game_icons/PNG/White/2x/star.png")
-const ICON_SINGLE := preload("res://assets/kenney_game_icons/PNG/White/2x/singleplayer.png")
-const ICON_SAVE := preload("res://assets/kenney_game_icons/PNG/White/2x/save.png")
-const ICON_PAUSE := preload("res://assets/kenney_game_icons/PNG/White/2x/pause.png")
-const ICON_FF := preload("res://assets/kenney_game_icons/PNG/White/2x/fastForward.png")
-const ICON_WARNING := preload("res://assets/kenney_game_icons/PNG/White/2x/warning.png")
-const ICON_CHECK := preload("res://assets/kenney_game_icons/PNG/White/2x/checkmark.png")
-const ICON_LOCKED := preload("res://assets/kenney_game_icons/PNG/White/2x/locked.png")
-const ICON_MENU := preload("res://assets/kenney_game_icons/PNG/White/2x/menuGrid.png")
-const ICON_EXCLAIM := preload("res://assets/kenney_game_icons/PNG/White/2x/exclamation.png")
+const ICO_HOME := preload("res://assets/kenney_game_icons/PNG/White/2x/home.png")
+const ICO_PLUS := preload("res://assets/kenney_game_icons/PNG/White/2x/plus.png")
+const ICO_MINUS := preload("res://assets/kenney_game_icons/PNG/White/2x/minus.png")
+const ICO_WRENCH := preload("res://assets/kenney_game_icons/PNG/White/2x/wrench.png")
+const ICO_TARGET := preload("res://assets/kenney_game_icons/PNG/White/2x/target.png")
+const ICO_STAR := preload("res://assets/kenney_game_icons/PNG/White/2x/star.png")
+const ICO_USER := preload("res://assets/kenney_game_icons/PNG/White/2x/singleplayer.png")
+const ICO_MENU := preload("res://assets/kenney_game_icons/PNG/White/2x/menuGrid.png")
+const ICO_CHECK := preload("res://assets/kenney_game_icons/PNG/White/2x/checkmark.png")
+const ICO_PAUSE := preload("res://assets/kenney_game_icons/PNG/White/2x/pause.png")
+const ICO_FF := preload("res://assets/kenney_game_icons/PNG/White/2x/fastForward.png")
+const ICO_SAVE := preload("res://assets/kenney_game_icons/PNG/White/2x/save.png")
+const ICO_LOCK := preload("res://assets/kenney_game_icons/PNG/White/2x/locked.png")
+const ICO_WARN := preload("res://assets/kenney_game_icons/PNG/White/2x/warning.png")
+const ICO_CROSS := preload("res://assets/kenney_game_icons/PNG/White/2x/cross.png")
 
 const SFX_CLICK := preload("res://assets/kenney_ui_pack/Sounds/click-a.ogg")
 const SFX_TAP := preload("res://assets/kenney_ui_pack/Sounds/tap-a.ogg")
 const SFX_SWITCH := preload("res://assets/kenney_ui_pack/Sounds/switch-a.ogg")
-const SFX_TAP_B := preload("res://assets/kenney_ui_pack/Sounds/tap-b.ogg")
+const SFX_COLLECT := preload("res://assets/kenney_ui_pack/Sounds/tap-b.ogg")
 
-const TILE_SIZE := 16
-const TILE_SCALE := 3
-const TILE_PIXEL := TILE_SIZE * TILE_SCALE
-const WORLD_COLUMNS := 34
-const WORLD_ROWS := 44
-const BUILDING_TEXTURE_SCALE := 0.34
-const DETAIL_TEXTURE_SCALE := 0.38
-const BUILDING_MAX_PX := 96.0
-const DETAIL_MAX_PX := 72.0
-const KEYBOARD_PAN_STEP := 80
-const MIN_BUILDING_GAP := 3
-const NAV_HEIGHT := 70.0
-const SHEET_HEIGHT_DESKTOP := 248.0
-const SHEET_HEIGHT_COMPACT := 280.0
-const HUD_MARGIN := 8.0
+const TILE := 48
+const COLS := 28
+const ROWS := 36
+const BLD_MAX := 88.0
+const POI_MAX := 64.0
+const GAP := 3
+const DOCK_H := 78.0
+const MARGIN := 8.0
 
-const BUILDING_SPRITES := {
-	"cabin": [SPRITE_HOMESTEAD_L1, SPRITE_CITY_HALL_L2, SPRITE_CITY_HALL_L3],
-	"woodlot": [SPRITE_SAWMILL_L1, SPRITE_SAWMILL_L2, SPRITE_SAWMILL_L3],
-	"garden": [SPRITE_HUNTERS_LODGE_L1, SPRITE_HUNTERS_LODGE_L2, SPRITE_HUNTERS_LODGE_L3],
-	"well": [SPRITE_SHELTERS_L1, SPRITE_SHELTERS_L2, SPRITE_SHELTERS_L3],
-	"hunter": [DETAIL_HUNTING, DETAIL_BLIND, DETAIL_CARCASS],
-	"workshop": [SPRITE_COAL_MINE_L1, SPRITE_COAL_MINE_L2, SPRITE_COAL_MINE_L3],
-	"kitchen": [DETAIL_CAMP, DETAIL_TIMBER_CAMP, DETAIL_SAWMILL],
-	"warehouse": [DETAIL_ROCKS, DETAIL_ORE, DETAIL_QUARRY],
-	"root_cellar": [DETAIL_CAVE, DETAIL_ROCKS, DETAIL_QUARRY],
-	"smokehouse": [DETAIL_TIMBER_CAMP, DETAIL_BLIND, DETAIL_SAWMILL],
-	"coop": [DETAIL_CAMP, DETAIL_OUTPOST, DETAIL_CARCASS],
-	"infirmary": [SPRITE_SHELTERS_L2, SPRITE_SHELTERS_L3, SPRITE_CITY_HALL_L1],
-	"watchtower": [DETAIL_OUTPOST, DETAIL_BLIND, SPRITE_CITY_HALL_L2],
+const SPRITES := {
+	"cabin": [SPR_HOME_L1, SPR_HALL_L2, SPR_HALL_L3],
+	"woodlot": [SPR_SAW_L1, SPR_SAW_L2, SPR_SAW_L3],
+	"garden": [SPR_LODGE_L1, SPR_LODGE_L2, SPR_LODGE_L3],
+	"well": [SPR_SHEL_L1, SPR_SHEL_L2, SPR_SHEL_L3],
+	"hunter": [DET_HUNT, DET_BLIND, DET_CARCASS],
+	"workshop": [SPR_MINE_L1, SPR_MINE_L2, SPR_MINE_L3],
+	"kitchen": [DET_CAMP, DET_CAMP2, DET_SAW],
+	"warehouse": [DET_ROCKS, DET_ORE, DET_QUARRY],
+	"root_cellar": [DET_CAVE, DET_ROCKS, DET_QUARRY],
+	"smokehouse": [DET_CAMP2, DET_BLIND, DET_SAW],
+	"coop": [DET_CAMP, DET_OUTPOST, DET_CARCASS],
+	"infirmary": [SPR_SHEL_L2, SPR_SHEL_L3, SPR_HALL_L1],
+	"watchtower": [DET_OUTPOST, DET_BLIND, SPR_HALL_L2],
 }
 
-const RESOURCE_ORDER := ["food", "wood", "water", "coal", "iron", "tools", "seed"]
-const RESOURCE_COLORS := {
-	"food": Color("#f3b05a"), "wood": Color("#9b6a4a"), "water": Color("#55bde8"),
-	"tools": Color("#d8e0e8"), "seed": Color("#90d06f"), "coal": Color("#6a6a78"),
-	"iron": Color("#b8c4d4"),
+const RES_ORDER := ["food", "wood", "water", "coal", "iron", "tools", "seed"]
+const RES_SHORT := {
+	"food": "🍖", "wood": "🪵", "water": "💧", "coal": "⬛",
+	"iron": "⚙", "tools": "🔧", "seed": "🌱",
 }
-const RESOURCE_LABELS := {
-	"food": "FOOD", "wood": "WOOD", "water": "H2O", "tools": "TOOL",
-	"seed": "SEED", "coal": "COAL", "iron": "IRON",
+const RES_COLOR := {
+	"food": Color("#f0a85a"), "wood": Color("#b07848"), "water": Color("#4eb8e8"),
+	"coal": Color("#7a7a88"), "iron": Color("#b0bcc8"), "tools": Color("#d0d8e0"),
+	"seed": Color("#88c868"),
+}
+const RES_NAME := {
+	"food": "Food", "wood": "Wood", "water": "Water", "coal": "Coal",
+	"iron": "Iron", "tools": "Tools", "seed": "Seed",
 }
 
-const MAP_DETAILS := [
-	{"id": "timber_stand", "name": "Frozen Timber", "texture": DETAIL_TIMBER, "cell": Vector2i(3, 3), "message": "Timber stand marked.", "reward": {"wood": 28}},
-	{"id": "stone_outcrop", "name": "Stone Outcrop", "texture": DETAIL_STONE, "cell": Vector2i(30, 3), "message": "Stone outcrop scouted.", "reward": {"iron": 3, "tools": 1}},
-	{"id": "hunting_trail", "name": "Hunting Trail", "texture": DETAIL_HUNTING, "cell": Vector2i(3, 38), "message": "Fresh tracks found.", "reward": {"food": 24}},
-	{"id": "abandoned_camp", "name": "Abandoned Camp", "texture": DETAIL_CAMP, "cell": Vector2i(30, 38), "message": "Abandoned camp logged.", "reward": {"food": 12, "coal": 4}},
-	{"id": "ice_cave", "name": "Ice Cave", "texture": DETAIL_CAVE, "cell": Vector2i(31, 20), "message": "Ice cave discovered.", "reward": {"water": 28, "coal": 3}},
-	{"id": "ridge_outpost", "name": "Ridge Outpost", "texture": DETAIL_OUTPOST, "cell": Vector2i(2, 20), "message": "Ridge outpost marked.", "reward": {"morale": 5, "wood": 14}},
-	{"id": "coal_seam", "name": "Coal Seam", "texture": DETAIL_ORE, "cell": Vector2i(16, 40), "message": "Coal seam surveyed.", "reward": {"coal": 12}},
+const POIS := [
+	{"id": "timber", "name": "Timber Stand", "tex": DET_TIMBER, "cell": Vector2i(2, 2), "msg": "Timber marked.", "reward": {"wood": 28}},
+	{"id": "stone", "name": "Stone Ridge", "tex": DET_STONE, "cell": Vector2i(25, 2), "msg": "Stone scouted.", "reward": {"iron": 3, "tools": 1}},
+	{"id": "hunt", "name": "Hunt Trail", "tex": DET_HUNT, "cell": Vector2i(2, 32), "msg": "Tracks found.", "reward": {"food": 24}},
+	{"id": "camp", "name": "Lost Camp", "tex": DET_CAMP, "cell": Vector2i(25, 32), "msg": "Camp logged.", "reward": {"food": 12, "coal": 4}},
+	{"id": "cave", "name": "Ice Cave", "tex": DET_CAVE, "cell": Vector2i(25, 17), "msg": "Cave found.", "reward": {"water": 28, "coal": 3}},
+	{"id": "ridge", "name": "Ridge Post", "tex": DET_OUTPOST, "cell": Vector2i(2, 17), "msg": "Post marked.", "reward": {"morale": 5, "wood": 14}},
+	{"id": "coal", "name": "Coal Seam", "tex": DET_ORE, "cell": Vector2i(14, 33), "msg": "Coal surveyed.", "reward": {"coal": 12}},
 ]
 
 var game: GameState
-var resource_labels := {}
-var resource_bars := {}
-var building_rows := {}
-var building_buttons := {}
-var building_badges := {}
-var bubble_buttons := {}
-var map_tiles: Array[TextureButton] = []
-var map_detail_buttons: Array[TextureButton] = []
-var building_positions := {"cabin": Vector2i(16, 12)}
 
-var world_grid: Control
+# UI roots
 var map_scroll: ScrollContainer
-var snow_overlay: Control
-var overlay_root: Control
-var top_bar: PanelContainer
-var bottom_nav: PanelContainer
-var sheet_panel: PanelContainer
-var storm_banner: PanelContainer
-var mission_strip: PanelContainer
-var toast_label: Label
-var map_status_label: Label
+var world: Control
+var snow: Control
+var chrome: Control
+var top_panel: PanelContainer
+var dock: PanelContainer
+var sheet: PanelContainer
+var sheet_dim: ColorRect
+var menu_dim: ColorRect
+var menu_panel: PanelContainer
+var menu_title: Label
+var menu_body: VBoxContainer
+var toast: Label
+var mission_pill: PanelContainer
+var mission_label: Label
+var storm_pill: PanelContainer
+var storm_label: Label
+var fab_collect: Button
+var sfx: AudioStreamPlayer
 
-var day_label: Label
-var season_label: Label
-var power_label: Label
-var people_label: Label
+# Top HUD
+var res_labels := {}
+var day_lbl: Label
 var heat_bar: ProgressBar
 var fuel_bar: ProgressBar
 var morale_bar: ProgressBar
-var day_progress: ProgressBar
-var furnace_label: Label
-
-var selected_title: Label
-var selected_detail: Label
-var selected_preview: TextureRect
-var selected_role: Label
-var selected_output: Label
-var selected_risk: Label
-var condition_bar: ProgressBar
-var readiness_bar: ProgressBar
-var ability_list: HFlowContainer
-var ability_scroll: ScrollContainer
-var worker_minus: Button
-var worker_plus: Button
-var collect_btn: Button
-var upgrade_btn: Button
-var move_btn: Button
-var worker_count_label: Label
-var sheet_body: VBoxContainer
-
-var build_panel: PanelContainer
-var survivors_panel: PanelContainer
-var missions_panel: PanelContainer
-var more_panel: PanelContainer
-var build_list: VBoxContainer
-var survivor_list: VBoxContainer
-var mission_list: VBoxContainer
-var log_list: VBoxContainer
-var mission_strip_list: HBoxContainer
-
 var pause_btn: Button
 var speed_btn: Button
-var nav_buttons := {}
 
-var selected_building := "cabin"
-var placing_building_id := ""
-var placement_cell := Vector2i.ZERO
+# Sheet
+var sheet_title: Label
+var sheet_sub: Label
+var sheet_preview: TextureRect
+var sheet_stats: Label
+var sheet_hp: ProgressBar
+var sheet_ready: ProgressBar
+var sheet_workers: Label
+var sheet_actions: HFlowContainer
+var btn_minus: Button
+var btn_plus: Button
+var btn_upgrade: Button
+var btn_collect: Button
+var btn_move: Button
+var btn_close_sheet: Button
+
+# Map
+var tiles: Array[TextureButton] = []
+var bld_btns := {}
+var bld_badges := {}
+var bld_bubbles := {}
+var poi_btns: Array[TextureButton] = []
+var positions := {"cabin": Vector2i(13, 12)}
+var place_layer: Control
+var place_preview: TextureRect
+
+# State
+var selected := "cabin"
+var placing := ""
+var place_cell := Vector2i.ZERO
 var move_mode := false
-var placement_layer: Control
-var placement_preview: TextureRect
-var ability_rebuild_queued := false
-var world_rebuild_queued := false
-var ui_ready := false
-var compact_layout := false
-var active_tab := ""
-var sfx_player: AudioStreamPlayer
+var menu_mode := "" # build | people | missions | more
+var sheet_open := false
+var ready_ui := false
+var drag := false
+var drag_last := Vector2.ZERO
+var pulse := 0.0
+var toast_t := 0.0
+var rebuild_world_q := false
+var rebuild_actions_q := false
+
+func _ready() -> void:
+	randomize()
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	game = GameStateScript.new()
+	_build_ui()
+	resized.connect(_layout)
+	game.changed.connect(_refresh)
+	game.choice_requested.connect(_on_choice)
+	game.game_ended.connect(_on_end)
+	game.tutorial_step.connect(_on_tutorial)
+	game.resources_collected.connect(_on_collected)
+	game.storm_warning.connect(func(d, i): _toast("Storm: %s in %sd" % [i, d]))
+	game.toast.connect(_toast)
+	if game.has_save():
+		game.set_paused(true)
+		_toast("Welcome back — More → Load")
+	else:
+		game.start_new_game()
+	call_deferred("_center_city")
+	call_deferred("_layout")
+	_refresh()
+
+func _process(delta: float) -> void:
+	if game == null:
+		return
+	game.tick(delta)
+	pulse += delta
+	if toast_t > 0.0:
+		toast_t -= delta
+		if toast_t <= 0.0:
+			toast.visible = false
+	_pulse_bubbles()
+	if snow and snow.has_method("set_storm_intensity"):
+		var f := 0.0
+		if game.storm_active_days > 0:
+			f = 1.0
+		elif game.days_until_storm() <= 2:
+			f = 0.5
+		elif game.days_until_storm() <= 4:
+			f = 0.2
+		snow.set_storm_intensity(f)
+
+func _input(e: InputEvent) -> void:
+	if not e is InputEventKey:
+		return
+	var k := e as InputEventKey
+	if not k.pressed or k.echo:
+		return
+	match k.keycode:
+		KEY_P:
+			if placing == "":
+				game.toggle_pause()
+				_sfx(SFX_SWITCH)
+				get_viewport().set_input_as_handled()
+		KEY_1:
+			game.set_time_scale(1.0)
+			_sfx(SFX_SWITCH)
+		KEY_2:
+			game.set_time_scale(2.0)
+			_sfx(SFX_SWITCH)
+		KEY_3:
+			game.set_time_scale(3.0)
+			_sfx(SFX_SWITCH)
+		KEY_C:
+			if placing == "":
+				_collect_all()
+		KEY_ESCAPE:
+			if placing != "":
+				_cancel_place()
+			elif move_mode:
+				_cancel_move()
+			elif sheet_open:
+				_close_sheet()
+			elif menu_mode != "":
+				_close_menu()
+			get_viewport().set_input_as_handled()
+		KEY_W, KEY_UP:
+			_pan(0, -1, k.shift_pressed)
+		KEY_S, KEY_DOWN:
+			_pan(0, 1, k.shift_pressed)
+		KEY_A, KEY_LEFT:
+			_pan(-1, 0, k.shift_pressed)
+		KEY_D, KEY_RIGHT:
+			_pan(1, 0, k.shift_pressed)
+		KEY_ENTER, KEY_KP_ENTER, KEY_SPACE:
+			if placing != "":
+				_commit_cell(place_cell)
+				get_viewport().set_input_as_handled()
+
+func _pan(dx: int, dy: int, fast: bool) -> void:
+	if map_scroll == null:
+		return
+	var s := 90 if fast else 48
+	map_scroll.scroll_horizontal += dx * s
+	map_scroll.scroll_vertical += dy * s
+	get_viewport().set_input_as_handled()
+
+# =============================================================================
+# BUILD UI
+# =============================================================================
+
+func _build_ui() -> void:
+	add_theme_font_override("font", FONT)
+	sfx = AudioStreamPlayer.new()
+	sfx.volume_db = -7.0
+	add_child(sfx)
+
+	var bg: Control = BackgroundScript.new()
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
+
+	# --- MAP ---
+	var map_host := Control.new()
+	map_host.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(map_host)
+
+	map_scroll = ScrollContainer.new()
+	map_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	map_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	map_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	map_scroll.gui_input.connect(_map_input)
+	map_host.add_child(map_scroll)
+
+	world = Control.new()
+	world.custom_minimum_size = Vector2(COLS * TILE, ROWS * TILE)
+	world.mouse_filter = Control.MOUSE_FILTER_STOP
+	map_scroll.add_child(world)
+	_rebuild_world()
+
+	snow = SnowOverlayScript.new()
+	snow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	snow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	map_host.add_child(snow)
+
+	# --- CHROME ---
+	chrome = Control.new()
+	chrome.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	chrome.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chrome.z_index = 20
+	add_child(chrome)
+
+	_build_top()
+	_build_pills()
+	_build_dock()
+	_build_fab()
+	_build_sheet()
+	_build_menu()
+	_build_toast()
+	_build_modals()
+
+	ready_ui = true
+	_layout()
+
+func _build_top() -> void:
+	top_panel = PanelContainer.new()
+	top_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	top_panel.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	top_panel.offset_left = MARGIN
+	top_panel.offset_top = MARGIN
+	top_panel.offset_right = -MARGIN
+	top_panel.add_theme_stylebox_override("panel", _glass(Color(0.04, 0.10, 0.16, 0.92), Color(0.55, 0.82, 1.0, 0.35), 14))
+	chrome.add_child(top_panel)
+
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 4)
+	top_panel.add_child(col)
+
+	# Row: day + meters + controls
+	var r1 := HBoxContainer.new()
+	r1.add_theme_constant_override("separation", 6)
+	col.add_child(r1)
+
+	day_lbl = Label.new()
+	day_lbl.add_theme_color_override("font_color", Color("#e8f6ff"))
+	day_lbl.add_theme_font_size_override("font_size", 13)
+	day_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	day_lbl.custom_minimum_size = Vector2(110, 0)
+	r1.add_child(day_lbl)
+
+	heat_bar = _bar(Color("#f0a44a"), "Heat")
+	r1.add_child(heat_bar)
+	fuel_bar = _bar(Color("#c47a3a"), "Fuel")
+	r1.add_child(fuel_bar)
+	morale_bar = _bar(Color("#6fd07a"), "Morale")
+	r1.add_child(morale_bar)
+
+	var sp := Control.new()
+	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r1.add_child(sp)
+
+	pause_btn = _icon(ICO_PAUSE, func(): game.toggle_pause(); _sfx(SFX_SWITCH))
+	pause_btn.tooltip_text = "Pause"
+	r1.add_child(pause_btn)
+	speed_btn = _icon(ICO_FF, func(): game.cycle_time_scale(); _sfx(SFX_SWITCH); _toast("Speed %sx" % game.time_scale))
+	speed_btn.tooltip_text = "Speed"
+	r1.add_child(speed_btn)
+
+	# Resource strip
+	var r2 := HBoxContainer.new()
+	r2.add_theme_constant_override("separation", 3)
+	col.add_child(r2)
+	for key in RES_ORDER:
+		var chip := PanelContainer.new()
+		chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		chip.custom_minimum_size = Vector2(0, 28)
+		chip.add_theme_stylebox_override("panel", _glass(Color(0.07, 0.14, 0.2, 0.95), RES_COLOR[key], 8))
+		r2.add_child(chip)
+		var lb := Label.new()
+		lb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lb.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lb.add_theme_color_override("font_color", Color("#f2f8ff"))
+		lb.add_theme_font_size_override("font_size", 11)
+		lb.text = RES_NAME[key].substr(0, 1) + " 0"
+		chip.add_child(lb)
+		res_labels[key] = lb
+
+func _build_pills() -> void:
+	storm_pill = PanelContainer.new()
+	storm_pill.visible = false
+	storm_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	storm_pill.anchor_left = 0.1
+	storm_pill.anchor_right = 0.9
+	storm_pill.add_theme_stylebox_override("panel", _glass(Color(0.45, 0.12, 0.1, 0.94), Color("#ff8a6a"), 10))
+	chrome.add_child(storm_pill)
+	storm_label = Label.new()
+	storm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	storm_label.add_theme_color_override("font_color", Color("#ffe8e0"))
+	storm_label.add_theme_font_size_override("font_size", 12)
+	storm_pill.add_child(storm_label)
+
+	mission_pill = PanelContainer.new()
+	mission_pill.mouse_filter = Control.MOUSE_FILTER_STOP
+	mission_pill.anchor_left = 0.0
+	mission_pill.anchor_right = 0.0
+	mission_pill.custom_minimum_size = Vector2(200, 0)
+	mission_pill.add_theme_stylebox_override("panel", _glass(Color(0.05, 0.16, 0.22, 0.9), Color("#5ec8f0"), 10))
+	mission_pill.gui_input.connect(func(ev):
+		if ev is InputEventMouseButton and ev.pressed:
+			_open_menu("missions")
+	)
+	chrome.add_child(mission_pill)
+	mission_label = Label.new()
+	mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	mission_label.add_theme_color_override("font_color", Color("#d8f2ff"))
+	mission_label.add_theme_font_size_override("font_size", 11)
+	mission_pill.add_child(mission_label)
+
+func _build_dock() -> void:
+	dock = PanelContainer.new()
+	dock.mouse_filter = Control.MOUSE_FILTER_STOP
+	dock.anchor_left = 0.0
+	dock.anchor_right = 1.0
+	dock.anchor_top = 1.0
+	dock.anchor_bottom = 1.0
+	dock.add_theme_stylebox_override("panel", _glass(Color(0.03, 0.08, 0.13, 0.96), Color(0.4, 0.75, 0.95, 0.4), 18))
+	chrome.add_child(dock)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	dock.add_child(row)
+
+	row.add_child(_dock_btn("Build", ICO_PLUS, Color("#1a7aa8"), func(): _open_menu("build")))
+	row.add_child(_dock_btn("People", ICO_USER, Color("#2f6d8a"), func(): _open_menu("people")))
+	row.add_child(_dock_btn("Missions", ICO_STAR, Color("#2d6b5c"), func(): _open_menu("missions")))
+	row.add_child(_dock_btn("Collect", ICO_CHECK, Color("#1f8a58"), _collect_all))
+	row.add_child(_dock_btn("More", ICO_MENU, Color("#4a5670"), func(): _open_menu("more")))
+
+func _build_fab() -> void:
+	fab_collect = Button.new()
+	fab_collect.text = "↓"
+	fab_collect.tooltip_text = "Collect all"
+	fab_collect.custom_minimum_size = Vector2(54, 54)
+	fab_collect.add_theme_font_size_override("font_size", 22)
+	fab_collect.add_theme_stylebox_override("normal", _glass(Color(0.12, 0.55, 0.38, 0.95), Color("#9ff0c8"), 27))
+	fab_collect.add_theme_stylebox_override("hover", _glass(Color(0.16, 0.65, 0.45, 0.98), Color("#c8ffe0"), 27))
+	fab_collect.add_theme_stylebox_override("pressed", _glass(Color(0.1, 0.4, 0.28, 0.98), Color("#7fd8b0"), 27))
+	fab_collect.add_theme_color_override("font_color", Color.WHITE)
+	fab_collect.pressed.connect(_collect_all)
+	fab_collect.anchor_left = 1.0
+	fab_collect.anchor_right = 1.0
+	fab_collect.anchor_top = 1.0
+	fab_collect.anchor_bottom = 1.0
+	chrome.add_child(fab_collect)
+
+func _build_sheet() -> void:
+	sheet_dim = ColorRect.new()
+	sheet_dim.color = Color(0, 0, 0, 0.35)
+	sheet_dim.visible = false
+	sheet_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	sheet_dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	sheet_dim.gui_input.connect(func(ev):
+		if ev is InputEventMouseButton and ev.pressed:
+			_close_sheet()
+	)
+	chrome.add_child(sheet_dim)
+
+	sheet = PanelContainer.new()
+	sheet.visible = false
+	sheet.mouse_filter = Control.MOUSE_FILTER_STOP
+	sheet.clip_contents = true
+	sheet.anchor_left = 0.0
+	sheet.anchor_right = 1.0
+	sheet.anchor_top = 1.0
+	sheet.anchor_bottom = 1.0
+	sheet.add_theme_stylebox_override("panel", _glass(Color(0.05, 0.11, 0.17, 0.98), Color(0.55, 0.88, 1.0, 0.45), 18))
+	chrome.add_child(sheet)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	sheet.add_child(box)
+
+	# Handle bar
+	var handle := ColorRect.new()
+	handle.color = Color(1, 1, 1, 0.25)
+	handle.custom_minimum_size = Vector2(48, 4)
+	handle.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(handle)
+
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	box.add_child(head)
+
+	sheet_preview = TextureRect.new()
+	sheet_preview.custom_minimum_size = Vector2(64, 56)
+	sheet_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sheet_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sheet_preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	head.add_child(sheet_preview)
+
+	var titles := VBoxContainer.new()
+	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(titles)
+	sheet_title = Label.new()
+	sheet_title.add_theme_color_override("font_color", Color("#f5fbff"))
+	sheet_title.add_theme_font_size_override("font_size", 18)
+	titles.add_child(sheet_title)
+	sheet_sub = Label.new()
+	sheet_sub.add_theme_color_override("font_color", Color("#9ecde0"))
+	sheet_sub.add_theme_font_size_override("font_size", 12)
+	titles.add_child(sheet_sub)
+
+	btn_collect = _btn("Collect", ICO_CHECK, Color("#1f8a58"), _collect_selected)
+	btn_collect.custom_minimum_size = Vector2(100, 44)
+	head.add_child(btn_collect)
+	btn_close_sheet = _icon(ICO_CROSS, _close_sheet)
+	head.add_child(btn_close_sheet)
+
+	sheet_stats = Label.new()
+	sheet_stats.add_theme_color_override("font_color", Color("#d0e8f4"))
+	sheet_stats.add_theme_font_size_override("font_size", 11)
+	sheet_stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(sheet_stats)
+
+	var meters := HBoxContainer.new()
+	meters.add_theme_constant_override("separation", 8)
+	box.add_child(meters)
+	sheet_hp = _bar(Color("#70d0cc"), "Condition")
+	sheet_hp.custom_minimum_size = Vector2(0, 26)
+	meters.add_child(sheet_hp)
+	sheet_ready = _bar(Color("#78c4ff"), "Ready")
+	sheet_ready.custom_minimum_size = Vector2(0, 26)
+	meters.add_child(sheet_ready)
+
+	var crew := HBoxContainer.new()
+	crew.add_theme_constant_override("separation", 8)
+	box.add_child(crew)
+	var cl := Label.new()
+	cl.text = "Crew"
+	cl.add_theme_color_override("font_color", Color("#cfe9f5"))
+	cl.add_theme_font_size_override("font_size", 13)
+	cl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	crew.add_child(cl)
+	btn_minus = _icon(ICO_MINUS, func(): game.assign_worker(selected, -1); _sfx(SFX_TAP))
+	crew.add_child(btn_minus)
+	sheet_workers = Label.new()
+	sheet_workers.custom_minimum_size = Vector2(56, 0)
+	sheet_workers.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sheet_workers.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	sheet_workers.add_theme_color_override("font_color", Color.WHITE)
+	sheet_workers.add_theme_font_size_override("font_size", 14)
+	crew.add_child(sheet_workers)
+	btn_plus = _icon(ICO_PLUS, func(): game.assign_worker(selected, 1); _sfx(SFX_TAP))
+	crew.add_child(btn_plus)
+	var sp2 := Control.new()
+	sp2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	crew.add_child(sp2)
+	btn_upgrade = _btn("Upgrade", ICO_WRENCH, Color("#a36a25"), func(): game.upgrade(selected); _sfx(SFX_CLICK))
+	btn_upgrade.custom_minimum_size = Vector2(110, 40)
+	crew.add_child(btn_upgrade)
+	btn_move = _btn("Move", ICO_TARGET, Color("#6a5a9b"), _toggle_move)
+	btn_move.custom_minimum_size = Vector2(90, 40)
+	crew.add_child(btn_move)
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 88)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	sheet_actions = HFlowContainer.new()
+	sheet_actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sheet_actions.add_theme_constant_override("separation", 6)
+	sheet_actions.add_theme_constant_override("v_separation", 6)
+	scroll.add_child(sheet_actions)
+
+func _build_menu() -> void:
+	menu_dim = ColorRect.new()
+	menu_dim.color = Color(0.01, 0.03, 0.06, 0.55)
+	menu_dim.visible = false
+	menu_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	menu_dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	menu_dim.gui_input.connect(func(ev):
+		if ev is InputEventMouseButton and ev.pressed:
+			_close_menu()
+	)
+	chrome.add_child(menu_dim)
+
+	menu_panel = PanelContainer.new()
+	menu_panel.visible = false
+	menu_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	menu_panel.clip_contents = true
+	menu_panel.anchor_left = 0.0
+	menu_panel.anchor_right = 1.0
+	menu_panel.anchor_top = 0.0
+	menu_panel.anchor_bottom = 1.0
+	menu_panel.add_theme_stylebox_override("panel", _glass(Color(0.96, 0.98, 1.0, 0.99), Color(1, 1, 1, 0.7), 16))
+	chrome.add_child(menu_panel)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	menu_panel.add_child(box)
+
+	var head := HBoxContainer.new()
+	box.add_child(head)
+	menu_title = Label.new()
+	menu_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	menu_title.add_theme_color_override("font_color", Color("#153247"))
+	menu_title.add_theme_font_size_override("font_size", 20)
+	head.add_child(menu_title)
+	head.add_child(_icon(ICO_CROSS, _close_menu))
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	menu_body = VBoxContainer.new()
+	menu_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	menu_body.add_theme_constant_override("separation", 8)
+	scroll.add_child(menu_body)
+
+func _build_toast() -> void:
+	toast = Label.new()
+	toast.visible = false
+	toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	toast.z_index = 50
+	toast.anchor_left = 0.12
+	toast.anchor_right = 0.88
+	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	toast.add_theme_color_override("font_color", Color("#fff8e0"))
+	toast.add_theme_font_size_override("font_size", 13)
+	toast.add_theme_stylebox_override("normal", _glass(Color(0.06, 0.16, 0.14, 0.94), Color("#9ff0c8"), 10))
+	chrome.add_child(toast)
+
 var modal_layer: CanvasLayer
 var tutorial_panel: PanelContainer
 var tutorial_title: Label
@@ -206,1824 +664,1064 @@ var tutorial_body: Label
 var choice_panel: PanelContainer
 var choice_title: Label
 var choice_body: Label
-var choice_buttons: VBoxContainer
+var choice_btns: VBoxContainer
 var end_panel: PanelContainer
 var end_title: Label
 var end_body: Label
-var _bubble_pulse := 0.0
-var _toast_timer := 0.0
-var _map_dragging := false
-var _map_drag_last := Vector2.ZERO
-var _hud_bottom := 120.0
-var _sheet_open := true
 
-func _ready() -> void:
-	randomize()
-	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	clip_contents = false
-	game = GameStateScript.new()
-	_build_interface()
-	resized.connect(_apply_responsive_layout)
-	game.changed.connect(_refresh)
-	game.choice_requested.connect(_on_choice_requested)
-	game.game_ended.connect(_on_game_ended)
-	game.tutorial_step.connect(_on_tutorial_step)
-	game.resources_collected.connect(_on_resources_collected)
-	game.storm_warning.connect(_on_storm_warning)
-	game.toast.connect(_show_toast)
-	if game.has_save():
-		game.set_paused(true)
-		_show_toast("Welcome back — open More → Load City")
-	else:
-		game.start_new_game()
-	call_deferred("_center_map_on_cabin")
-	call_deferred("_apply_responsive_layout")
-	_refresh()
+func _build_modals() -> void:
+	modal_layer = CanvasLayer.new()
+	modal_layer.layer = 60
+	add_child(modal_layer)
 
-func _process(delta: float) -> void:
-	if game == null:
-		return
-	game.tick(delta)
-	_bubble_pulse += delta
-	if day_progress:
-		day_progress.value = game.DAY_LENGTH - game.seconds_until_day
-	if _toast_timer > 0.0:
-		_toast_timer -= delta
-		if _toast_timer <= 0.0 and toast_label:
-			toast_label.visible = false
-	_update_bubble_pulse()
-	_update_storm_visuals()
+	tutorial_panel = _modal()
+	var tb: VBoxContainer = tutorial_panel.get_meta("box")
+	tutorial_title = _mlabel(22, Color("#153247"))
+	tb.add_child(tutorial_title)
+	tutorial_body = _mlabel(15, Color("#2a4a5c"))
+	tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tb.add_child(tutorial_body)
+	var tr := HBoxContainer.new()
+	tr.add_theme_constant_override("separation", 10)
+	tb.add_child(tr)
+	tr.add_child(_btn("Skip", ICO_MINUS, Color("#65757c"), func(): tutorial_panel.visible = false; game.skip_tutorial(); _sfx(SFX_SWITCH)))
+	tr.add_child(_btn("Next", ICO_PLUS, Color("#1f7fab"), func(): tutorial_panel.visible = false; game.advance_tutorial(); _sfx(SFX_CLICK)))
+	modal_layer.add_child(tutorial_panel)
 
-func _input(event: InputEvent) -> void:
-	if not event is InputEventKey:
-		return
-	var ke := event as InputEventKey
-	if not ke.pressed or ke.echo:
-		return
-	if ke.keycode == KEY_P and placing_building_id == "":
-		game.toggle_pause()
-		_play_sfx(SFX_SWITCH)
-		get_viewport().set_input_as_handled()
-		return
-	if ke.keycode == KEY_1:
-		game.set_time_scale(1.0)
-		_play_sfx(SFX_SWITCH)
-		get_viewport().set_input_as_handled()
-		return
-	if ke.keycode == KEY_2:
-		game.set_time_scale(2.0)
-		_play_sfx(SFX_SWITCH)
-		get_viewport().set_input_as_handled()
-		return
-	if ke.keycode == KEY_3:
-		game.set_time_scale(3.0)
-		_play_sfx(SFX_SWITCH)
-		get_viewport().set_input_as_handled()
-		return
-	if ke.keycode == KEY_C and placing_building_id == "":
-		_on_collect_all()
-		get_viewport().set_input_as_handled()
-		return
+	choice_panel = _modal()
+	var cb: VBoxContainer = choice_panel.get_meta("box")
+	choice_title = _mlabel(22, Color("#153247"))
+	cb.add_child(choice_title)
+	choice_body = _mlabel(15, Color("#2a4a5c"))
+	choice_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	cb.add_child(choice_body)
+	choice_btns = VBoxContainer.new()
+	choice_btns.add_theme_constant_override("separation", 8)
+	cb.add_child(choice_btns)
+	modal_layer.add_child(choice_panel)
 
-	var direction := Vector2i.ZERO
-	match ke.physical_keycode:
-		KEY_W, KEY_UP: direction = Vector2i.UP
-		KEY_S, KEY_DOWN: direction = Vector2i.DOWN
-		KEY_A, KEY_LEFT: direction = Vector2i.LEFT
-		KEY_D, KEY_RIGHT: direction = Vector2i.RIGHT
-
-	if placing_building_id != "" and direction != Vector2i.ZERO:
-		placement_cell = Vector2i(
-			clampi(placement_cell.x + direction.x, 0, WORLD_COLUMNS - 1),
-			clampi(placement_cell.y + direction.y, 0, WORLD_ROWS - 1)
-		)
-		_update_placement_preview_for_cell(placement_cell)
-		get_viewport().set_input_as_handled()
-	elif placing_building_id != "" and (ke.keycode == KEY_ENTER or ke.keycode == KEY_KP_ENTER or ke.keycode == KEY_SPACE):
-		_handle_map_cell_pressed(placement_cell)
-		get_viewport().set_input_as_handled()
-	elif placing_building_id != "" and ke.keycode == KEY_ESCAPE:
-		_cancel_build_placement()
-		get_viewport().set_input_as_handled()
-	elif ke.keycode == KEY_ESCAPE:
-		_close_all_panels()
-		get_viewport().set_input_as_handled()
-	elif direction != Vector2i.ZERO and map_scroll:
-		var step := KEYBOARD_PAN_STEP * (3 if ke.shift_pressed else 1)
-		map_scroll.scroll_horizontal += direction.x * step
-		map_scroll.scroll_vertical += direction.y * step
-		get_viewport().set_input_as_handled()
+	end_panel = _modal()
+	var eb: VBoxContainer = end_panel.get_meta("box")
+	end_title = _mlabel(24, Color("#153247"))
+	eb.add_child(end_title)
+	end_body = _mlabel(15, Color("#2a4a5c"))
+	end_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	eb.add_child(end_body)
+	eb.add_child(_btn("New Settlement", ICO_PLUS, Color("#1f7fab"), _new_game))
+	modal_layer.add_child(end_panel)
 
 # =============================================================================
-# INTERFACE BUILD
+# WORLD
 # =============================================================================
 
-func _build_interface() -> void:
-	add_theme_font_override("font", FONT_FUTURE)
-	sfx_player = AudioStreamPlayer.new()
-	sfx_player.volume_db = -6.0
-	add_child(sfx_player)
+func _rebuild_world() -> void:
+	for c in world.get_children():
+		c.queue_free()
+	tiles.clear()
+	bld_btns.clear()
+	bld_badges.clear()
+	bld_bubbles.clear()
+	poi_btns.clear()
+	place_layer = null
+	place_preview = null
 
-	var bg: Control = BackgroundScript.new()
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
+	var terrain := _terrain()
+	for y in ROWS:
+		for x in COLS:
+			var cell := Vector2i(x, y)
+			var t := TextureButton.new()
+			t.position = Vector2(x * TILE, y * TILE)
+			t.custom_minimum_size = Vector2(TILE, TILE)
+			t.size = Vector2(TILE, TILE)
+			t.ignore_texture_size = true
+			t.stretch_mode = TextureButton.STRETCH_SCALE
+			t.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			var tid: int = terrain[y][x]
+			t.texture_normal = _tile_tex(tid)
+			var base := _tile_mod(tid)
+			t.modulate = base
+			t.set_meta("cell", cell)
+			t.set_meta("base", base)
+			t.disabled = not _placing()
+			t.pressed.connect(_commit_cell.bind(cell))
+			tiles.append(t)
+			world.add_child(t)
 
-	var map_root := Control.new()
-	map_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	map_root.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(map_root)
+	for p in POIS:
+		_add_poi(p)
+	for id in positions.keys():
+		if game.has_building(id):
+			_add_building(id)
+	_add_place_layer()
 
-	map_scroll = ScrollContainer.new()
-	map_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	map_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-	map_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-	map_scroll.gui_input.connect(_on_map_gui_input)
-	map_root.add_child(map_scroll)
-
-	world_grid = Control.new()
-	world_grid.custom_minimum_size = Vector2(WORLD_COLUMNS * TILE_PIXEL, WORLD_ROWS * TILE_PIXEL)
-	world_grid.mouse_filter = Control.MOUSE_FILTER_STOP
-	map_scroll.add_child(world_grid)
-	_build_world_grid(world_grid)
-
-	snow_overlay = SnowOverlayScript.new()
-	snow_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	snow_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	map_root.add_child(snow_overlay)
-
-	overlay_root = Control.new()
-	overlay_root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	overlay_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	overlay_root.z_index = 10
-	add_child(overlay_root)
-
-	_build_top_hud()
-	_build_storm_banner()
-	_build_mission_strip()
-	_build_sheet()
-	_build_bottom_nav()
-	_build_side_panels()
-	_build_toasts()
-	_build_modals()
-
-	ui_ready = true
-	_apply_responsive_layout()
-
-func _build_top_hud() -> void:
-	top_bar = PanelContainer.new()
-	top_bar.mouse_filter = Control.MOUSE_FILTER_STOP
-	top_bar.z_index = 30
-	top_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	top_bar.offset_left = HUD_MARGIN
-	top_bar.offset_top = HUD_MARGIN
-	top_bar.offset_right = -HUD_MARGIN
-	top_bar.offset_bottom = 0
-	top_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	top_bar.add_theme_stylebox_override("panel", _style(Color(0.02, 0.08, 0.14, 0.94), Color(0.45, 0.78, 0.95, 0.45), 12))
-	overlay_root.add_child(top_bar)
-
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 5)
-	top_bar.add_child(root)
-
-	var row1 := HBoxContainer.new()
-	row1.add_theme_constant_override("separation", 6)
-	root.add_child(row1)
-
-	var title := Label.new()
-	title.text = "FROSTFALL"
-	title.add_theme_color_override("font_color", Color("#f4fbff"))
-	title.add_theme_font_size_override("font_size", 16)
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row1.add_child(title)
-
-	day_label = _chip("D1")
-	row1.add_child(day_label)
-	season_label = _chip("EARLY")
-	row1.add_child(season_label)
-	people_label = _chip("0/8")
-	people_label.tooltip_text = "Idle / total survivors"
-	row1.add_child(people_label)
-	power_label = _chip("P0")
-	power_label.tooltip_text = "Settlement power"
-	row1.add_child(power_label)
-
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row1.add_child(spacer)
-
-	pause_btn = _icon_btn(ICON_PAUSE, _on_pause)
-	pause_btn.tooltip_text = "Pause (P)"
-	row1.add_child(pause_btn)
-	speed_btn = _icon_btn(ICON_FF, _on_speed)
-	speed_btn.tooltip_text = "Cycle speed (1/2/3)"
-	row1.add_child(speed_btn)
-
-	day_progress = ProgressBar.new()
-	day_progress.min_value = 0
-	day_progress.max_value = 24
-	day_progress.custom_minimum_size = Vector2(72, 18)
-	day_progress.show_percentage = false
-	day_progress.tooltip_text = "Day progress"
-	day_progress.add_theme_stylebox_override("background", _meter_bg())
-	day_progress.add_theme_stylebox_override("fill", _meter_fill(Color("#5ec4f0")))
-	row1.add_child(day_progress)
-
-	# Resources as wrap flow — no clip overflow
-	var row2 := HFlowContainer.new()
-	row2.add_theme_constant_override("separation", 4)
-	row2.add_theme_constant_override("v_separation", 4)
-	root.add_child(row2)
-	for res in RESOURCE_ORDER:
-		var chip := PanelContainer.new()
-		chip.custom_minimum_size = Vector2(78, 26)
-		chip.add_theme_stylebox_override("panel", _style_tight(Color(0.06, 0.14, 0.2, 0.95), RESOURCE_COLORS[res], 6))
-		row2.add_child(chip)
-		var lbl := Label.new()
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.add_theme_color_override("font_color", Color("#eef8ff"))
-		lbl.add_theme_font_size_override("font_size", 11)
-		lbl.text = "%s 0" % RESOURCE_LABELS[res]
-		chip.add_child(lbl)
-		resource_labels[res] = lbl
-		resource_bars[res] = chip
-
-	var row3 := HBoxContainer.new()
-	row3.add_theme_constant_override("separation", 6)
-	root.add_child(row3)
-
-	furnace_label = Label.new()
-	furnace_label.text = "Heat"
-	furnace_label.add_theme_color_override("font_color", Color("#f0c080"))
-	furnace_label.add_theme_font_size_override("font_size", 11)
-	furnace_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	furnace_label.custom_minimum_size = Vector2(40, 0)
-	row3.add_child(furnace_label)
-
-	heat_bar = _named_bar("Furnace heat", Color("#f0a44a"))
-	heat_bar.custom_minimum_size = Vector2(80, 22)
-	row3.add_child(heat_bar)
-	fuel_bar = _named_bar("Furnace fuel", Color("#c47a3a"))
-	fuel_bar.custom_minimum_size = Vector2(80, 22)
-	row3.add_child(fuel_bar)
-	morale_bar = _named_bar("City morale", Color("#77d37b"))
-	morale_bar.custom_minimum_size = Vector2(80, 22)
-	row3.add_child(morale_bar)
-
-func _build_storm_banner() -> void:
-	storm_banner = PanelContainer.new()
-	storm_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	storm_banner.visible = false
-	storm_banner.z_index = 28
-	storm_banner.anchor_left = 0.0
-	storm_banner.anchor_right = 1.0
-	storm_banner.offset_left = HUD_MARGIN + 20
-	storm_banner.offset_right = -(HUD_MARGIN + 20)
-	storm_banner.add_theme_stylebox_override("panel", _style_tight(Color(0.4, 0.12, 0.1, 0.94), Color("#ff8a6a"), 8))
-	overlay_root.add_child(storm_banner)
-	var lbl := Label.new()
-	lbl.name = "StormText"
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl.add_theme_color_override("font_color", Color("#ffe8e0"))
-	lbl.add_theme_font_size_override("font_size", 12)
-	storm_banner.add_child(lbl)
-
-func _build_mission_strip() -> void:
-	mission_strip = PanelContainer.new()
-	mission_strip.mouse_filter = Control.MOUSE_FILTER_STOP
-	mission_strip.z_index = 27
-	mission_strip.anchor_left = 0.0
-	mission_strip.anchor_right = 1.0
-	mission_strip.offset_left = HUD_MARGIN
-	mission_strip.offset_right = -HUD_MARGIN
-	mission_strip.custom_minimum_size = Vector2(0, 36)
-	mission_strip.add_theme_stylebox_override("panel", _style_tight(Color(0.04, 0.12, 0.18, 0.88), Color(0.5, 0.85, 1.0, 0.3), 8))
-	overlay_root.add_child(mission_strip)
-	var scroll := ScrollContainer.new()
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	scroll.custom_minimum_size = Vector2(0, 28)
-	mission_strip.add_child(scroll)
-	mission_strip_list = HBoxContainer.new()
-	mission_strip_list.add_theme_constant_override("separation", 6)
-	scroll.add_child(mission_strip_list)
-
-func _build_sheet() -> void:
-	sheet_panel = PanelContainer.new()
-	sheet_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	sheet_panel.z_index = 25
-	sheet_panel.clip_contents = true
-	sheet_panel.anchor_left = 0.0
-	sheet_panel.anchor_right = 1.0
-	sheet_panel.anchor_top = 1.0
-	sheet_panel.anchor_bottom = 1.0
-	sheet_panel.add_theme_stylebox_override("panel", _style(Color(0.03, 0.09, 0.14, 0.96), Color(0.55, 0.88, 1.0, 0.4), 12))
-	overlay_root.add_child(sheet_panel)
-
-	sheet_body = VBoxContainer.new()
-	sheet_body.add_theme_constant_override("separation", 5)
-	sheet_panel.add_child(sheet_body)
-
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 8)
-	sheet_body.add_child(header)
-
-	selected_preview = TextureRect.new()
-	selected_preview.custom_minimum_size = Vector2(56, 48)
-	selected_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	selected_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	selected_preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	header.add_child(selected_preview)
-
-	var titles := VBoxContainer.new()
-	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(titles)
-	selected_title = Label.new()
-	selected_title.add_theme_color_override("font_color", Color("#f5fbff"))
-	selected_title.add_theme_font_size_override("font_size", 16)
-	selected_title.clip_text = true
-	titles.add_child(selected_title)
-	selected_detail = Label.new()
-	selected_detail.add_theme_color_override("font_color", Color("#9fd0e4"))
-	selected_detail.add_theme_font_size_override("font_size", 11)
-	selected_detail.clip_text = true
-	titles.add_child(selected_detail)
-
-	collect_btn = _action_btn("COLLECT", ICON_STAR, _on_collect_selected, Color("#1f8a6a"))
-	collect_btn.custom_minimum_size = Vector2(96, 42)
-	collect_btn.size_flags_horizontal = Control.SIZE_SHRINK_END
-	header.add_child(collect_btn)
-
-	# Compact stats row — one line role, meters
-	var info := HBoxContainer.new()
-	info.add_theme_constant_override("separation", 8)
-	sheet_body.add_child(info)
-
-	var text_col := VBoxContainer.new()
-	text_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info.add_child(text_col)
-	selected_role = Label.new()
-	selected_role.add_theme_color_override("font_color", Color("#e8f6ff"))
-	selected_role.add_theme_font_size_override("font_size", 11)
-	selected_role.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	selected_role.max_lines_visible = 1
-	text_col.add_child(selected_role)
-	selected_output = Label.new()
-	selected_output.add_theme_color_override("font_color", Color("#8fd0a8"))
-	selected_output.add_theme_font_size_override("font_size", 10)
-	selected_output.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	selected_output.max_lines_visible = 1
-	text_col.add_child(selected_output)
-	selected_risk = Label.new()
-	selected_risk.add_theme_color_override("font_color", Color("#f0c080"))
-	selected_risk.add_theme_font_size_override("font_size", 10)
-	selected_risk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	selected_risk.max_lines_visible = 1
-	text_col.add_child(selected_risk)
-
-	condition_bar = _named_bar("Building condition", Color("#75d4d0"))
-	condition_bar.custom_minimum_size = Vector2(88, 28)
-	condition_bar.size_flags_horizontal = Control.SIZE_SHRINK_END
-	info.add_child(condition_bar)
-	readiness_bar = _named_bar("Order readiness", Color("#7cc8ff"))
-	readiness_bar.custom_minimum_size = Vector2(88, 28)
-	readiness_bar.size_flags_horizontal = Control.SIZE_SHRINK_END
-	info.add_child(readiness_bar)
-
-	var workers := HBoxContainer.new()
-	workers.add_theme_constant_override("separation", 6)
-	sheet_body.add_child(workers)
-	var wl := Label.new()
-	wl.text = "Crew"
-	wl.add_theme_color_override("font_color", Color("#cfe9f5"))
-	wl.add_theme_font_size_override("font_size", 12)
-	wl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	workers.add_child(wl)
-	worker_minus = _icon_btn(ICON_MINUS, func() -> void:
-		_play_sfx(SFX_TAP)
-		game.assign_worker(selected_building, -1)
-	)
-	worker_minus.tooltip_text = "Remove worker"
-	workers.add_child(worker_minus)
-	worker_count_label = Label.new()
-	worker_count_label.custom_minimum_size = Vector2(48, 0)
-	worker_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	worker_count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	worker_count_label.add_theme_color_override("font_color", Color("#e8f6ff"))
-	worker_count_label.add_theme_font_size_override("font_size", 13)
-	workers.add_child(worker_count_label)
-	worker_plus = _icon_btn(ICON_PLUS, func() -> void:
-		_play_sfx(SFX_TAP)
-		game.assign_worker(selected_building, 1)
-	)
-	worker_plus.tooltip_text = "Assign worker"
-	workers.add_child(worker_plus)
-
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	workers.add_child(spacer)
-
-	upgrade_btn = _action_btn("Upgrade", ICON_WRENCH, func() -> void:
-		_play_sfx(SFX_CLICK)
-		game.upgrade(selected_building)
-	, Color("#a36a25"))
-	upgrade_btn.custom_minimum_size = Vector2(100, 38)
-	upgrade_btn.size_flags_horizontal = Control.SIZE_SHRINK_END
-	workers.add_child(upgrade_btn)
-	move_btn = _action_btn("Move", ICON_TARGET, _toggle_move_mode, Color("#6a5a9b"))
-	move_btn.custom_minimum_size = Vector2(84, 38)
-	move_btn.size_flags_horizontal = Control.SIZE_SHRINK_END
-	workers.add_child(move_btn)
-
-	ability_scroll = ScrollContainer.new()
-	ability_scroll.custom_minimum_size = Vector2(0, 72)
-	ability_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	ability_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	sheet_body.add_child(ability_scroll)
-	ability_list = HFlowContainer.new()
-	ability_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ability_list.add_theme_constant_override("separation", 6)
-	ability_list.add_theme_constant_override("v_separation", 6)
-	ability_scroll.add_child(ability_list)
-
-func _build_bottom_nav() -> void:
-	bottom_nav = PanelContainer.new()
-	bottom_nav.mouse_filter = Control.MOUSE_FILTER_STOP
-	bottom_nav.z_index = 30
-	bottom_nav.anchor_left = 0.0
-	bottom_nav.anchor_right = 1.0
-	bottom_nav.anchor_top = 1.0
-	bottom_nav.anchor_bottom = 1.0
-	bottom_nav.offset_left = HUD_MARGIN
-	bottom_nav.offset_right = -HUD_MARGIN
-	bottom_nav.offset_top = -NAV_HEIGHT
-	bottom_nav.offset_bottom = -HUD_MARGIN
-	bottom_nav.add_theme_stylebox_override("panel", _style(Color(0.02, 0.07, 0.12, 0.97), Color(0.4, 0.75, 0.95, 0.35), 12))
-	overlay_root.add_child(bottom_nav)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 5)
-	bottom_nav.add_child(row)
-
-	nav_buttons["build"] = _nav_btn("Build", ICON_PLUS, Color("#1f7fab"), _toggle_build)
-	nav_buttons["survivors"] = _nav_btn("People", ICON_SINGLE, Color("#3a6b8a"), _toggle_survivors)
-	nav_buttons["missions"] = _nav_btn("Missions", ICON_STAR, Color("#356b5f"), _toggle_missions)
-	nav_buttons["collect"] = _nav_btn("Collect", ICON_CHECK, Color("#1f8a5a"), _on_collect_all)
-	nav_buttons["more"] = _nav_btn("More", ICON_MENU, Color("#5a5f75"), _toggle_more)
-	for k in ["build", "survivors", "missions", "collect", "more"]:
-		row.add_child(nav_buttons[k])
-
-func _build_side_panels() -> void:
-	build_panel = _make_panel("BUILD CITY", 0)
-	build_list = build_panel.get_meta("list")
-	for building_id in game.building_ids():
-		var row := _make_building_row(building_id)
-		building_rows[building_id] = row
-		build_list.add_child(row["container"])
-
-	survivors_panel = _make_panel("SURVIVORS", 1)
-	survivor_list = survivors_panel.get_meta("list")
-
-	missions_panel = _make_panel("MISSIONS & LOG", 2)
-	mission_list = VBoxContainer.new()
-	mission_list.add_theme_constant_override("separation", 6)
-	missions_panel.get_meta("list").add_child(mission_list)
-	var log_h := Label.new()
-	log_h.text = "Dispatch Log"
-	log_h.add_theme_color_override("font_color", Color("#153247"))
-	log_h.add_theme_font_size_override("font_size", 14)
-	missions_panel.get_meta("list").add_child(log_h)
-	log_list = VBoxContainer.new()
-	log_list.add_theme_constant_override("separation", 4)
-	missions_panel.get_meta("list").add_child(log_list)
-
-	more_panel = _make_panel("COMMAND", 3)
-	var more_list: VBoxContainer = more_panel.get_meta("list")
-	more_list.add_child(_action_btn("Save City", ICON_SAVE, _on_save, Color("#356b5f")))
-	more_list.add_child(_action_btn("Load City", ICON_HOME, _on_load, Color("#425f75")))
-	more_list.add_child(_action_btn("New Game", ICON_PLUS, _on_new_game, Color("#7a4a3a")))
-	more_list.add_child(_action_btn("Expedition", ICON_TARGET, func() -> void:
-		_play_sfx(SFX_CLICK)
-		game.send_expedition()
-	, Color("#2f6b62")))
-	more_list.add_child(_action_btn("Stoke Furnace (Wood)", ICON_WRENCH, func() -> void:
-		_play_sfx(SFX_CLICK)
-		game.repair_hearth()
-	, Color("#a36a25")))
-	map_status_label = Label.new()
-	map_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	map_status_label.add_theme_color_override("font_color", Color("#2a4a5c"))
-	map_status_label.add_theme_font_size_override("font_size", 12)
-	map_status_label.text = "WASD pan · P pause · 1/2/3 speed · C collect all · Esc close"
-	more_list.add_child(map_status_label)
-
-func _build_toasts() -> void:
-	toast_label = Label.new()
-	toast_label.visible = false
-	toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	toast_label.z_index = 40
-	toast_label.anchor_left = 0.15
-	toast_label.anchor_right = 0.85
-	toast_label.offset_top = 170
-	toast_label.offset_bottom = 200
-	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	toast_label.add_theme_color_override("font_color", Color("#fff8e0"))
-	toast_label.add_theme_font_size_override("font_size", 13)
-	toast_label.add_theme_stylebox_override("normal", _style_tight(Color(0.05, 0.14, 0.12, 0.94), Color("#9ff0c8"), 8))
-	overlay_root.add_child(toast_label)
-
-func _make_panel(title_text: String, _idx: int) -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.visible = false
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	panel.z_index = 35
-	panel.clip_contents = true
-	panel.anchor_left = 0.0
-	panel.anchor_right = 1.0
-	panel.anchor_top = 0.0
-	panel.anchor_bottom = 1.0
-	panel.offset_left = HUD_MARGIN
-	panel.offset_right = -HUD_MARGIN
-	panel.offset_top = 120
-	panel.offset_bottom = -(NAV_HEIGHT + HUD_MARGIN)
-	panel.add_theme_stylebox_override("panel", _style(Color(0.95, 0.98, 1.0, 0.99), Color(1, 1, 1, 0.75), 12))
-	overlay_root.add_child(panel)
-
-	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 8)
-	panel.add_child(outer)
-
-	var head := HBoxContainer.new()
-	outer.add_child(head)
-	var title := Label.new()
-	title.text = title_text
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.add_theme_color_override("font_color", Color("#153247"))
-	title.add_theme_font_size_override("font_size", 18)
-	head.add_child(title)
-	var close := _icon_btn(ICON_MINUS, _close_all_panels)
-	close.tooltip_text = "Close"
-	head.add_child(close)
-
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	outer.add_child(scroll)
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 8)
-	scroll.add_child(list)
-	panel.set_meta("list", list)
-	return panel
-
-# =============================================================================
-# WORLD MAP
-# =============================================================================
-
-func _build_world_grid(board: Control) -> void:
-	building_buttons.clear()
-	building_badges.clear()
-	bubble_buttons.clear()
-	map_tiles.clear()
-	map_detail_buttons.clear()
-	placement_layer = null
-	placement_preview = null
-	var terrain := _make_terrain()
-
-	for y in range(WORLD_ROWS):
-		for x in range(WORLD_COLUMNS):
-			var pos := Vector2i(x, y)
-			var tile := TextureButton.new()
-			tile.position = Vector2(x * TILE_PIXEL, y * TILE_PIXEL)
-			tile.custom_minimum_size = Vector2(TILE_PIXEL, TILE_PIXEL)
-			tile.size = Vector2(TILE_PIXEL, TILE_PIXEL)
-			tile.stretch_mode = TextureButton.STRETCH_SCALE
-			tile.texture_normal = _terrain_texture(terrain[y][x])
-			var base_mod := _terrain_modulate(terrain[y][x])
-			tile.modulate = base_mod
-			tile.set_meta("cell", pos)
-			tile.set_meta("base_modulate", base_mod)
-			tile.disabled = not _placement_active()
-			tile.pressed.connect(_handle_map_cell_pressed.bind(pos))
-			map_tiles.append(tile)
-			board.add_child(tile)
-
-	for detail in MAP_DETAILS:
-		_add_map_detail(board, detail)
-	for building_id in building_positions.keys():
-		if game.has_building(building_id):
-			_add_building_sprite(board, building_id)
-	_add_placement_layer(board)
-
-func _add_map_detail(board: Control, detail: Dictionary) -> void:
-	var cell: Vector2i = detail["cell"]
-	var tex: Texture2D = detail["texture"]
-	var draw_size := _capped_tex_size(tex, DETAIL_TEXTURE_SCALE, DETAIL_MAX_PX)
-	var center := Vector2(cell.x * TILE_PIXEL + TILE_PIXEL * 0.5, cell.y * TILE_PIXEL + TILE_PIXEL * 0.5)
-	var btn := TextureButton.new()
-	btn.position = center - draw_size * 0.5
-	btn.custom_minimum_size = draw_size
-	btn.size = draw_size
-	btn.ignore_texture_size = true
-	btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-	btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	btn.texture_normal = tex
-	btn.tooltip_text = "Scout: %s" % detail["name"]
-	btn.pressed.connect(_handle_map_detail_pressed.bind(detail))
-	btn.z_index = 1
-	map_detail_buttons.append(btn)
-	board.add_child(btn)
-
-func _add_building_sprite(board: Control, building_id: String) -> void:
-	var tex := _building_texture(building_id)
-	var level := int(game.buildings[building_id]["level"])
-	var tier := mini(level - 1, 2)
-	var scale := BUILDING_TEXTURE_SCALE + float(tier) * 0.04
-	var sprite_size := _capped_tex_size(tex, scale, BUILDING_MAX_PX)
-	var plot: Vector2i = building_positions[building_id]
-	var center := Vector2(plot.x * TILE_PIXEL + TILE_PIXEL * 0.5, plot.y * TILE_PIXEL + TILE_PIXEL * 0.5)
-
-	var btn := TextureButton.new()
-	btn.position = center - sprite_size * 0.5
-	btn.custom_minimum_size = sprite_size
-	btn.size = sprite_size
-	btn.ignore_texture_size = true
-	btn.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
-	btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	btn.texture_normal = tex
-	btn.tooltip_text = game.buildings[building_id]["name"]
-	btn.pressed.connect(_select_building.bind(building_id))
-	btn.z_index = 3
-	building_buttons[building_id] = btn
-	board.add_child(btn)
-
-	var badge := Label.new()
-	badge.text = ""
-	badge.visible = false
-	badge.position = Vector2(btn.position.x, btn.position.y + sprite_size.y - 4)
-	badge.custom_minimum_size = Vector2(maxi(40, int(sprite_size.x * 0.7)), 16)
-	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge.add_theme_color_override("font_color", Color("#0b2534"))
-	badge.add_theme_font_size_override("font_size", 9)
-	badge.add_theme_stylebox_override("normal", _badge(Color("#9ff0ff")))
-	badge.z_index = 5
-	building_badges[building_id] = badge
-	board.add_child(badge)
-
-	# Collection bubble — top-right of building, never covers badge
-	var bubble := Button.new()
-	bubble.text = "+"
-	bubble.visible = false
-	bubble.focus_mode = Control.FOCUS_NONE
-	bubble.position = Vector2(btn.position.x + sprite_size.x - 18, btn.position.y - 10)
-	bubble.custom_minimum_size = Vector2(40, 26)
-	bubble.add_theme_font_size_override("font_size", 10)
-	bubble.add_theme_stylebox_override("normal", _style_tight(Color(0.08, 0.42, 0.28, 0.96), Color("#9ff0c8"), 12))
-	bubble.add_theme_stylebox_override("hover", _style_tight(Color(0.12, 0.55, 0.36, 0.98), Color("#c8ffe0"), 12))
-	bubble.add_theme_stylebox_override("pressed", _style_tight(Color(0.06, 0.32, 0.22, 0.98), Color("#7fd8b0"), 12))
-	bubble.add_theme_color_override("font_color", Color.WHITE)
-	bubble.z_index = 7
-	bubble.pressed.connect(_on_collect_building.bind(building_id))
-	bubble_buttons[building_id] = bubble
-	board.add_child(bubble)
-
-func _add_placement_layer(board: Control) -> void:
-	placement_layer = Control.new()
-	placement_layer.custom_minimum_size = Vector2(WORLD_COLUMNS * TILE_PIXEL, WORLD_ROWS * TILE_PIXEL)
-	placement_layer.size = placement_layer.custom_minimum_size
-	placement_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	placement_layer.visible = false
-	placement_layer.z_index = 12
-	placement_layer.gui_input.connect(_handle_placement_layer_input)
-	board.add_child(placement_layer)
-	placement_preview = TextureRect.new()
-	placement_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	placement_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	placement_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	placement_preview.visible = false
-	placement_layer.add_child(placement_preview)
-
-func _make_terrain() -> Array:
-	var terrain := []
-	for y in range(WORLD_ROWS):
+func _terrain() -> Array:
+	var g := []
+	for y in ROWS:
 		var row := []
-		for x in range(WORLD_COLUMNS):
+		for x in COLS:
 			var id := 0
-			if x == 16 and y >= 8 and y <= 28:
-				id = 4  # vertical road
-			elif y == 16 and x >= 8 and x <= 26:
-				id = 2  # horizontal road
-			elif x >= 14 and x <= 18 and y >= 10 and y <= 14:
-				id = 3  # clearing plaza
-			elif (x + y * 3) % 11 == 0:
+			if x == 13 and y >= 6 and y <= 24:
+				id = 4
+			elif y == 14 and x >= 6 and x <= 20:
+				id = 2
+			elif x >= 11 and x <= 15 and y >= 10 and y <= 14:
+				id = 3
+			elif (x + y * 2) % 10 == 0:
 				id = 1
 			row.append(id)
-		terrain.append(row)
-	for p in [Vector2i(2, 2), Vector2i(6, 4), Vector2i(27, 3), Vector2i(30, 8), Vector2i(3, 30), Vector2i(28, 32)]:
-		if p.y < WORLD_ROWS and p.x < WORLD_COLUMNS:
-			terrain[p.y][p.x] = 10
-	for p in [Vector2i(13, 14), Vector2i(14, 14), Vector2i(15, 14), Vector2i(19, 15), Vector2i(20, 15)]:
-		terrain[p.y][p.x] = 70
-	return terrain
+		g.append(row)
+	for p in [Vector2i(1, 1), Vector2i(5, 3), Vector2i(22, 2), Vector2i(24, 6), Vector2i(3, 28), Vector2i(22, 30)]:
+		if p.y < ROWS and p.x < COLS:
+			g[p.y][p.x] = 10
+	return g
 
-func _terrain_texture(id: int) -> Texture2D:
+func _tile_tex(id: int) -> Texture2D:
 	match id:
 		1: return TERRAIN_SNOW_ROUGH
-		2: return TERRAIN_ROAD_HORIZONTAL
+		2: return TERRAIN_ROAD_H
 		3: return TERRAIN_CLEARING
-		4: return TERRAIN_ROAD_VERTICAL
+		4: return TERRAIN_ROAD_V
 		10: return TERRAIN_PINE
 		70: return TERRAIN_LOGS
 	return TERRAIN_SNOW
 
-func _terrain_modulate(id: int) -> Color:
-	match id:
-		0: return Color("#e5f4f8")
-		1: return Color("#f6fbff")
+func _tile_mod(id: int) -> Color:
+	if id == 0:
+		return Color("#e8f4f8")
+	if id == 1:
+		return Color("#f4faff")
 	return Color.WHITE
+
+func _add_poi(p: Dictionary) -> void:
+	var cell: Vector2i = p["cell"]
+	var tex: Texture2D = p["tex"]
+	var sz := _cap(tex, 0.36, POI_MAX)
+	var center := Vector2(cell.x * TILE + TILE * 0.5, cell.y * TILE + TILE * 0.5)
+	var b := TextureButton.new()
+	b.position = center - sz * 0.5
+	b.custom_minimum_size = sz
+	b.size = sz
+	b.ignore_texture_size = true
+	b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	b.texture_normal = tex
+	b.tooltip_text = "Scout: %s" % p["name"]
+	b.z_index = 1
+	b.pressed.connect(func():
+		if _placing():
+			return
+		_sfx(SFX_CLICK)
+		game.scout_site(p["id"], p["reward"], p["msg"])
+	)
+	poi_btns.append(b)
+	world.add_child(b)
+
+func _add_building(id: String) -> void:
+	var tex := _spr(id)
+	var lvl := int(game.buildings[id]["level"])
+	var sz := _cap(tex, 0.32 + mini(lvl - 1, 2) * 0.03, BLD_MAX)
+	var plot: Vector2i = positions[id]
+	var center := Vector2(plot.x * TILE + TILE * 0.5, plot.y * TILE + TILE * 0.5)
+
+	var b := TextureButton.new()
+	b.position = center - sz * 0.5
+	b.custom_minimum_size = sz
+	b.size = sz
+	b.ignore_texture_size = true
+	b.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	b.texture_normal = tex
+	b.tooltip_text = game.buildings[id]["name"]
+	b.z_index = 3
+	b.pressed.connect(_tap_building.bind(id))
+	bld_btns[id] = b
+	world.add_child(b)
+
+	var badge := Label.new()
+	badge.visible = false
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.position = Vector2(b.position.x, b.position.y + sz.y - 2)
+	badge.custom_minimum_size = Vector2(maxi(36, int(sz.x * 0.65)), 16)
+	badge.add_theme_color_override("font_color", Color("#0b2534"))
+	badge.add_theme_font_size_override("font_size", 9)
+	badge.add_theme_stylebox_override("normal", _pill(Color("#9ff0ff")))
+	badge.z_index = 5
+	bld_badges[id] = badge
+	world.add_child(badge)
+
+	var bubble := Button.new()
+	bubble.visible = false
+	bubble.focus_mode = Control.FOCUS_NONE
+	bubble.text = "+"
+	bubble.position = Vector2(b.position.x + sz.x - 16, b.position.y - 12)
+	bubble.custom_minimum_size = Vector2(42, 28)
+	bubble.add_theme_font_size_override("font_size", 11)
+	bubble.add_theme_stylebox_override("normal", _glass(Color(0.1, 0.5, 0.32, 0.96), Color("#9ff0c8"), 14))
+	bubble.add_theme_stylebox_override("hover", _glass(Color(0.14, 0.6, 0.4, 0.98), Color("#c8ffe0"), 14))
+	bubble.add_theme_color_override("font_color", Color.WHITE)
+	bubble.z_index = 7
+	bubble.pressed.connect(_collect_building.bind(id))
+	bld_bubbles[id] = bubble
+	world.add_child(bubble)
+
+func _add_place_layer() -> void:
+	place_layer = Control.new()
+	place_layer.custom_minimum_size = Vector2(COLS * TILE, ROWS * TILE)
+	place_layer.size = place_layer.custom_minimum_size
+	place_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	place_layer.visible = false
+	place_layer.z_index = 12
+	place_layer.gui_input.connect(_place_input)
+	world.add_child(place_layer)
+	place_preview = TextureRect.new()
+	place_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	place_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	place_preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	place_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	place_preview.visible = false
+	place_layer.add_child(place_preview)
+
+# =============================================================================
+# LAYOUT
+# =============================================================================
+
+func _layout() -> void:
+	if not ready_ui:
+		return
+	var vp := get_viewport_rect().size
+	var compact := vp.x < 860.0 or vp.y > vp.x
+
+	top_panel.offset_left = MARGIN
+	top_panel.offset_top = MARGIN
+	top_panel.offset_right = -MARGIN
+	top_panel.reset_size()
+	var top_h := maxf(top_panel.get_combined_minimum_size().y, 78.0)
+	top_panel.offset_bottom = MARGIN + top_h
+	var y := MARGIN + top_h + 6.0
+
+	if storm_pill.visible:
+		storm_pill.offset_left = MARGIN * 2
+		storm_pill.offset_right = -MARGIN * 2
+		storm_pill.offset_top = y
+		storm_pill.offset_bottom = y + 28.0
+		y += 32.0
+
+	mission_pill.offset_left = MARGIN
+	mission_pill.offset_right = MARGIN + (220.0 if not compact else minf(vp.x - MARGIN * 2, 280.0))
+	mission_pill.offset_top = y
+	mission_pill.offset_bottom = y + 40.0
+
+	toast.offset_top = y + 46.0
+	toast.offset_bottom = y + 76.0
+
+	dock.offset_left = MARGIN
+	dock.offset_right = -MARGIN
+	dock.offset_top = -DOCK_H
+	dock.offset_bottom = -MARGIN
+
+	fab_collect.offset_left = -70
+	fab_collect.offset_right = -MARGIN - 4
+	fab_collect.offset_top = -(DOCK_H + 70)
+	fab_collect.offset_bottom = -(DOCK_H + 16)
+
+	var sheet_h := 300.0 if compact else 270.0
+	sheet.offset_left = MARGIN
+	sheet.offset_right = -MARGIN
+	sheet.offset_top = -(sheet_h + DOCK_H + 2)
+	sheet.offset_bottom = -(DOCK_H + 2)
+
+	menu_panel.offset_left = MARGIN
+	menu_panel.offset_right = -MARGIN
+	menu_panel.offset_top = MARGIN + top_h + 8
+	menu_panel.offset_bottom = -(DOCK_H + MARGIN)
 
 # =============================================================================
 # REFRESH
 # =============================================================================
 
 func _refresh() -> void:
-	if not ui_ready:
+	if not ready_ui or game == null:
 		return
-	_ensure_selected_building()
-	_sync_building_positions()
+	_sync_positions()
+	_ensure_selected()
 
-	day_label.text = "D%s" % game.day
-	season_label.text = game.season.replace(" Winter", "").to_upper()
-	people_label.text = "%s/%s" % [game.available_workers, game.homesteaders]
-	power_label.text = "P%s" % game.settlement_power()
-	day_progress.max_value = game.DAY_LENGTH
-	day_progress.value = game.DAY_LENGTH - game.seconds_until_day
+	day_lbl.text = "Day %s · %s" % [game.day, game.season.replace(" Winter", "")]
 	heat_bar.value = game.heat
 	fuel_bar.value = game.furnace_fuel
 	morale_bar.value = game.morale
-	furnace_label.text = "FURN %.0f°" % game.heat
+	pause_btn.modulate = Color(1.4, 1.15, 0.7) if game.paused else Color.WHITE
+	speed_btn.tooltip_text = "Speed %sx" % game.time_scale
 
-	if pause_btn:
-		pause_btn.modulate = Color(1.3, 1.1, 0.7) if game.paused else Color.WHITE
-	if speed_btn:
-		speed_btn.tooltip_text = "%sx" % game.time_scale
-
-	for res in RESOURCE_ORDER:
-		var amt := int(game.resources.get(res, 0))
-		var cap := int(game.storage_capacity(res))
-		resource_labels[res].text = "%s %s" % [RESOURCE_LABELS[res], amt]
-		resource_labels[res].tooltip_text = "%s: %s / %s capacity" % [res.capitalize(), amt, cap]
-		var low := amt < maxi(1, int(cap * 0.2))
-		resource_bars[res].add_theme_stylebox_override("panel", _style_tight(
-			Color(0.38, 0.14, 0.1, 0.95) if low else Color(0.06, 0.14, 0.2, 0.95),
-			RESOURCE_COLORS[res], 6
+	for key in RES_ORDER:
+		var amt := int(game.resources.get(key, 0))
+		var cap := int(game.storage_capacity(key))
+		res_labels[key].text = "%s %s" % [RES_NAME[key].substr(0, 1), amt]
+		res_labels[key].tooltip_text = "%s %s / %s" % [RES_NAME[key], amt, cap]
+		var low := amt < maxi(1, int(cap * 0.18))
+		res_labels[key].get_parent().add_theme_stylebox_override("panel", _glass(
+			Color(0.4, 0.14, 0.1, 0.95) if low else Color(0.07, 0.14, 0.2, 0.95),
+			RES_COLOR[key], 8
 		))
 
-	# Storm + mission strip content
-	var days_storm := game.days_until_storm()
-	var storm_txt: Label = storm_banner.get_node_or_null("StormText")
-	if storm_txt:
-		if game.storm_active_days > 0:
-			storm_banner.visible = true
-			storm_txt.text = "⚠ %s ACTIVE — stoke the furnace!" % game.storm_intensity.to_upper()
-		elif days_storm >= 0 and days_storm <= 2:
-			storm_banner.visible = true
-			storm_txt.text = "⚠ %s in %s day(s) — stock fuel & food" % [game.storm_intensity.to_upper(), days_storm]
-		else:
-			storm_banner.visible = false
+	var ds := game.days_until_storm()
+	if game.storm_active_days > 0:
+		storm_pill.visible = true
+		storm_label.text = "⚠ %s ACTIVE — feed the furnace" % game.storm_intensity.to_upper()
+	elif ds >= 0 and ds <= 2:
+		storm_pill.visible = true
+		storm_label.text = "⚠ %s in %s day(s)" % [game.storm_intensity.to_upper(), ds]
+	else:
+		storm_pill.visible = false
 
-	for c in mission_strip_list.get_children():
-		c.queue_free()
-	for goal in game.active_missions():
-		var chip := Label.new()
-		chip.text = " %s · %s " % [goal["title"], goal["progress"]]
-		chip.add_theme_color_override("font_color", Color("#e8f8ff"))
-		chip.add_theme_font_size_override("font_size", 11)
-		chip.add_theme_stylebox_override("normal", _style_tight(Color(0.08, 0.25, 0.32, 0.92), Color("#6ad0f0"), 6))
-		mission_strip_list.add_child(chip)
-	if mission_strip_list.get_child_count() == 0:
-		var chip := Label.new()
-		chip.text = " All chapter missions clear "
-		chip.add_theme_color_override("font_color", Color("#c8f0d8"))
-		chip.add_theme_font_size_override("font_size", 11)
-		mission_strip_list.add_child(chip)
+	var missions := game.active_missions()
+	if missions.is_empty():
+		mission_label.text = "Ch.%s · All missions clear\nPower %s" % [game.current_chapter, game.settlement_power()]
+	else:
+		var g: Dictionary = missions[0]
+		mission_label.text = "▶ %s\n%s" % [g["title"], g["progress"]]
 
-	_layout_hud_stack()
+	fab_collect.visible = game.has_any_bubbles() and menu_mode == "" and not sheet_open
+	fab_collect.modulate = Color(1.15, 1.25, 1.1)
 
-	if not game.has_building(selected_building):
-		return
-
-	var b: Dictionary = game.buildings[selected_building]
-	selected_preview.texture = _building_texture(selected_building)
-	selected_title.text = String(b["name"])
-	selected_detail.text = "Lv%s · %s/%s crew · %s" % [
-		b["level"], b["workers"], b["max_workers"], game.building_status_text(selected_building)
-	]
-	var details := game.building_details(selected_building)
-	selected_role.text = details["role"]
-	selected_output.text = "%s · %s" % [details["output"], _fmt_prod(game.production_preview(selected_building))]
-	selected_risk.text = details["risk"]
-	condition_bar.value = float(b["condition"])
-	readiness_bar.value = float(b["readiness"])
-	var op := game.is_building_operational(selected_building)
-	if worker_count_label:
-		worker_count_label.text = "%s/%s" % [b["workers"], b["max_workers"]]
-	worker_plus.disabled = game.game_over or not op or game.available_workers <= 0 or int(b["workers"]) >= int(b["max_workers"])
-	worker_minus.disabled = game.game_over or not op or int(b["workers"]) <= 0
-	var bubble_sel := game.bubble_total(selected_building)
-	collect_btn.disabled = bubble_sel < 1.0
-	collect_btn.text = "Collect" if bubble_sel < 1.0 else "Take %.0f" % bubble_sel
-	if upgrade_btn:
-		upgrade_btn.disabled = not game.can_upgrade(selected_building)
-		var uc := game.upgrade_cost(selected_building)
-		upgrade_btn.tooltip_text = "Upgrade: %s" % _fmt_cost(uc)
-	if move_btn:
-		move_btn.disabled = game.game_over or not op
-		move_btn.text = "Moving…" if move_mode else "Move"
-	_queue_ability_rebuild()
-
-	# Build rows
-	for building_id in building_rows.keys():
-		var row: Dictionary = building_rows[building_id]
-		if game.has_building(building_id):
-			var bb: Dictionary = game.buildings[building_id]
-			var cost := game.upgrade_cost(building_id)
-			row["icon"].texture = _building_texture(building_id)
-			row["icon"].modulate = Color.WHITE
-			row["info"].text = "%s%s L%s\n%s/%s · %s%% HP\n%s · Up %sw %st" % [
-				"> " if building_id == selected_building else "",
-				bb["name"], bb["level"], bb["workers"], bb["max_workers"], int(bb["condition"]),
-				game.building_status_text(building_id), cost.get("wood", 0), cost.get("tools", 0),
-			]
-			row["plus"].visible = true
-			row["minus"].visible = true
-			row["upgrade"].visible = true
-			row["build"].visible = false
-			row["plus"].disabled = not game.is_building_operational(building_id) or game.available_workers <= 0 or int(bb["workers"]) >= int(bb["max_workers"])
-			row["minus"].disabled = not game.is_building_operational(building_id) or int(bb["workers"]) <= 0
-			row["upgrade"].disabled = not game.can_upgrade(building_id)
-		else:
-			row["icon"].texture = _blueprint_texture(building_id)
-			row["icon"].modulate = Color(0.7, 0.82, 0.9, 0.65)
-			row["info"].text = "%s\n%s\nCost: %s" % [
-				game.building_name(building_id), game.building_status_text(building_id), _fmt_cost(game.build_cost(building_id))
-			]
-			row["plus"].visible = false
-			row["minus"].visible = false
-			row["upgrade"].visible = false
-			row["build"].visible = true
-			row["build"].disabled = not game.can_build(building_id)
-			row["build"].icon = ICON_LOCKED if not game.is_building_unlocked(building_id) else ICON_PLUS
-
-	# Map building visuals
-	for building_id in building_buttons.keys():
-		if not game.has_building(building_id):
+	# Buildings
+	for id in bld_btns.keys():
+		if not game.has_building(id):
 			continue
-		var bb: Dictionary = game.buildings[building_id]
-		var btn: TextureButton = building_buttons[building_id]
-		var badge: Label = building_badges[building_id]
-		btn.texture_normal = _building_texture(building_id)
-		var bubble_amt := game.bubble_total(building_id)
-		if bubble_buttons.has(building_id):
-			var bub: Button = bubble_buttons[building_id]
-			bub.visible = bubble_amt >= 1.0
+		var bb: Dictionary = game.buildings[id]
+		var btn: TextureButton = bld_btns[id]
+		var badge: Label = bld_badges[id]
+		btn.texture_normal = _spr(id)
+		var bubble_n := game.bubble_total(id)
+		if bld_bubbles.has(id):
+			var bub: Button = bld_bubbles[id]
+			bub.visible = bubble_n >= 1.0
 			if bub.visible:
 				var parts: Array[String] = []
-				var amounts := game.bubble_amounts(building_id)
-				for k in amounts.keys():
-					if float(amounts[k]) >= 1.0:
-						parts.append("%s%s" % [int(amounts[k]), RESOURCE_LABELS.get(str(k), str(k))[0]])
-				bub.text = " ".join(parts) if not parts.is_empty() else "●"
+				var am := game.bubble_amounts(id)
+				for k in am.keys():
+					if float(am[k]) >= 1.0:
+						parts.append(str(int(am[k])))
+				bub.text = "+%s" % ("/".join(parts) if not parts.is_empty() else "")
 		var under := bool(bb.get("under_construction", false))
-		var upgrading: bool = str(game.active_project.get("building_id", "")) == building_id
-		if under or upgrading:
+		var upg: bool = str(game.active_project.get("building_id", "")) == id
+		if under or upg:
 			badge.visible = true
 			badge.text = "%s%%" % int(game.project_progress() * 100.0)
-			badge.add_theme_stylebox_override("normal", _badge(Color("#f0c36a")))
-			btn.modulate = Color(0.85, 0.9, 1.0, 0.78)
+			badge.add_theme_stylebox_override("normal", _pill(Color("#f0c36a")))
+			btn.modulate = Color(0.85, 0.9, 1.0, 0.8)
 		elif float(bb["condition"]) < 30.0:
 			badge.visible = true
 			badge.text = "WEAK"
-			badge.add_theme_stylebox_override("normal", _badge(Color("#f08a6a")))
-			btn.modulate = Color(1.12, 0.86, 0.82)
-		elif float(bb["readiness"]) >= 100.0 and bubble_amt < 1.0:
+			badge.add_theme_stylebox_override("normal", _pill(Color("#f08a6a")))
+			btn.modulate = Color(1.12, 0.85, 0.82)
+		elif float(bb["readiness"]) >= 100.0 and bubble_n < 1.0:
 			badge.visible = true
-			badge.text = "ORDER"
-			badge.add_theme_stylebox_override("normal", _badge(Color("#9ff0ff")))
-			btn.modulate = Color("#d8fff1") if building_id != selected_building else Color(1.35, 1.35, 1.35)
+			badge.text = "READY"
+			badge.add_theme_stylebox_override("normal", _pill(Color("#9ff0ff")))
+			btn.modulate = Color(1.3, 1.3, 1.3) if id == selected and sheet_open else Color("#d8fff1")
 		else:
-			# Bubble handles collect; badge stays hidden to avoid double clutter
 			badge.visible = false
-			btn.modulate = Color(1.35, 1.35, 1.35) if building_id == selected_building else Color(0.96, 1.0, 1.04)
+			btn.modulate = Color(1.3, 1.3, 1.3) if id == selected and sheet_open else Color(0.97, 1.0, 1.04)
 
-	for i in range(map_detail_buttons.size()):
-		if i >= MAP_DETAILS.size():
+	for i in poi_btns.size():
+		if i >= POIS.size():
 			break
-		var d: Dictionary = MAP_DETAILS[i]
-		var db: TextureButton = map_detail_buttons[i]
-		if game.scouted_sites.has(d["id"]):
-			db.modulate = Color(0.5, 0.6, 0.65, 0.5)
-			db.tooltip_text = "%s (scouted)" % d["name"]
+		var p: Dictionary = POIS[i]
+		var b: TextureButton = poi_btns[i]
+		if game.scouted_sites.has(p["id"]):
+			b.modulate = Color(0.5, 0.58, 0.62, 0.45)
+			b.tooltip_text = "%s (scouted)" % p["name"]
 		else:
-			db.modulate = Color.WHITE
-			db.tooltip_text = d["name"]
+			b.modulate = Color.WHITE
+			b.tooltip_text = "Scout: %s" % p["name"]
 
-	# Survivors panel
-	if survivors_panel.visible:
-		_rebuild_survivor_list()
+	if sheet_open and game.has_building(selected):
+		_refresh_sheet()
+	if menu_mode != "":
+		_fill_menu()
 
-	# Missions + log
-	for c in mission_list.get_children():
-		c.queue_free()
-	for goal in game.survival_goals():
-		mission_list.add_child(_goal_card(goal))
-	for c in log_list.get_children():
-		c.queue_free()
-	for i in range(mini(10, game.event_log.size())):
-		log_list.add_child(_event_card(game.event_log[i], i))
+	_layout()
 
-	if game.game_over:
-		sheet_panel.modulate = Color(0.75, 0.75, 0.75)
-	else:
-		sheet_panel.modulate = Color.WHITE
+func _refresh_sheet() -> void:
+	var b: Dictionary = game.buildings[selected]
+	sheet_preview.texture = _spr(selected)
+	sheet_title.text = String(b["name"])
+	sheet_sub.text = "Lv.%s  ·  %s  ·  %s idle" % [b["level"], game.building_status_text(selected), game.available_workers]
+	var d := game.building_details(selected)
+	var prod := _fmt_prod(game.production_preview(selected))
+	sheet_stats.text = "%s\n%s · %s\n⚠ %s" % [d["role"], d["output"], prod, d["risk"]]
+	sheet_hp.value = float(b["condition"])
+	sheet_ready.value = float(b["readiness"])
+	sheet_workers.text = "%s/%s" % [b["workers"], b["max_workers"]]
+	var op := game.is_building_operational(selected)
+	btn_plus.disabled = game.game_over or not op or game.available_workers <= 0 or int(b["workers"]) >= int(b["max_workers"])
+	btn_minus.disabled = game.game_over or not op or int(b["workers"]) <= 0
+	var bn := game.bubble_total(selected)
+	btn_collect.disabled = bn < 1.0
+	btn_collect.text = "Collect" if bn < 1.0 else "Take %.0f" % bn
+	btn_upgrade.disabled = not game.can_upgrade(selected)
+	btn_upgrade.tooltip_text = "Cost: %s" % _fmt_cost(game.upgrade_cost(selected))
+	btn_move.disabled = game.game_over or not op
+	btn_move.text = "Moving" if move_mode else "Move"
+	_queue_actions()
 
-	# Collect nav highlight when bubbles waiting
-	if nav_buttons.has("collect"):
-		nav_buttons["collect"].modulate = Color(1.25, 1.35, 1.15) if game.has_any_bubbles() else Color.WHITE
-
-func _rebuild_survivor_list() -> void:
-	for c in survivor_list.get_children():
-		c.queue_free()
-	var summary := Label.new()
-	summary.text = "Idle %s · Sick %s · Total %s" % [game.idle_survivor_count(), game.sick_survivor_count(), game.homesteaders]
-	summary.add_theme_color_override("font_color", Color("#153247"))
-	summary.add_theme_font_size_override("font_size", 13)
-	survivor_list.add_child(summary)
-	for s in game.survivor_list():
-		var card := PanelContainer.new()
-		card.add_theme_stylebox_override("panel", _style(Color(1, 1, 1, 0.9), Color(0.5, 0.7, 0.85, 0.3), 6))
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		card.add_child(row)
-		var info := Label.new()
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		info.text = "%s\n%s · HP %s%%" % [s["name"], s.get("role", "Idle"), int(s.get("health", 100))]
-		info.add_theme_color_override("font_color", Color("#153247"))
-		info.add_theme_font_size_override("font_size", 12)
-		row.add_child(info)
-		var sid := int(s["id"])
-		var idle_b := _action_btn("Idle", ICON_MINUS, game.assign_survivor.bind(sid, ""), Color("#5a6a73"))
-		idle_b.custom_minimum_size = Vector2(70, 36)
-		idle_b.disabled = str(s.get("building_id", "")) == ""
-		row.add_child(idle_b)
-		var asg := _action_btn("Job", ICON_PLUS, game.assign_survivor.bind(sid, selected_building), Color("#1f7fab"))
-		asg.custom_minimum_size = Vector2(70, 36)
-		asg.disabled = not game.is_building_operational(selected_building)
-		row.add_child(asg)
-		survivor_list.add_child(card)
-
-func _queue_ability_rebuild() -> void:
-	if ability_rebuild_queued:
+func _queue_actions() -> void:
+	if rebuild_actions_q:
 		return
-	ability_rebuild_queued = true
-	call_deferred("_rebuild_abilities")
+	rebuild_actions_q = true
+	call_deferred("_rebuild_actions")
 
-func _rebuild_abilities() -> void:
-	ability_rebuild_queued = false
-	if ability_list == null:
-		return
-	for c in ability_list.get_children():
+func _rebuild_actions() -> void:
+	rebuild_actions_q = false
+	for c in sheet_actions.get_children():
 		c.queue_free()
-	if not game.is_building_operational(selected_building):
-		var b := _action_btn(game.building_status_text(selected_building), ICON_WARNING, func() -> void: pass, Color("#425f75"))
+	if not game.is_building_operational(selected):
+		var b := _btn(game.building_status_text(selected), ICO_WARN, Color("#425f75"), func(): pass)
 		b.disabled = true
-		b.custom_minimum_size = Vector2(160, 40)
-		ability_list.add_child(b)
+		sheet_actions.add_child(b)
 		return
-	for action in game.building_actions(selected_building):
-		var aid: String = action["id"]
-		var btn := _action_btn("%s · %s" % [action["name"], action["cost"]], ICON_TARGET, _do_action.bind(aid), Color("#1f6f94"))
-		btn.custom_minimum_size = Vector2(132, 40)
+	for a in game.building_actions(selected):
+		var aid: String = a["id"]
+		var btn := _btn("%s" % a["name"], ICO_TARGET, Color("#1f6f94"), func():
+			_sfx(SFX_CLICK)
+			game.perform_building_action(selected, aid)
+		)
+		btn.custom_minimum_size = Vector2(120, 40)
 		btn.add_theme_font_size_override("font_size", 11)
-		btn.disabled = game.game_over or not game.can_perform_building_action(selected_building, aid)
-		btn.tooltip_text = "%s\nCost: %s\n%s" % [action["name"], action["cost"], action["effect"]]
-		ability_list.add_child(btn)
+		btn.disabled = game.game_over or not game.can_perform_building_action(selected, aid)
+		btn.tooltip_text = "%s\nCost: %s\n%s" % [a["name"], a["cost"], a["effect"]]
+		sheet_actions.add_child(btn)
 
 # =============================================================================
-# ACTIONS
+# MENUS
 # =============================================================================
 
-func _select_building(building_id: String) -> void:
-	_play_sfx(SFX_TAP)
-	# Tap building with bubble collects first if significant
-	if game.bubble_total(building_id) >= 1.0 and selected_building == building_id:
-		_on_collect_building(building_id)
+func _open_menu(mode: String) -> void:
+	_sfx(SFX_SWITCH)
+	_close_sheet()
+	if menu_mode == mode:
+		_close_menu()
 		return
-	selected_building = building_id
-	_close_all_panels()
-	sheet_panel.visible = true
+	menu_mode = mode
+	menu_dim.visible = true
+	menu_panel.visible = true
+	fab_collect.visible = false
+	_fill_menu()
+	_layout()
+
+func _close_menu() -> void:
+	menu_mode = ""
+	menu_dim.visible = false
+	menu_panel.visible = false
+	_layout()
 	_refresh()
 
-func _on_collect_building(building_id: String) -> void:
-	_play_sfx(SFX_TAP_B)
-	var gained := game.collect_from_building(building_id)
-	if gained.is_empty():
-		return
-	_spawn_collect_fx(building_id, gained)
-
-func _on_collect_selected() -> void:
-	_on_collect_building(selected_building)
-
-func _on_collect_all() -> void:
-	_play_sfx(SFX_TAP_B)
-	var gained := game.collect_all()
-	if gained.is_empty():
-		_show_toast("No bubbles to collect")
-		return
-	var parts: Array[String] = []
-	for k in gained.keys():
-		parts.append("+%s %s" % [int(gained[k]), k])
-	_show_toast("Collected " + ", ".join(parts))
-	if building_buttons.has("cabin"):
-		var btn: Control = building_buttons["cabin"]
-		FloatingTextScript.spawn(self, btn.get_global_position() + btn.size * 0.5, "COLLECT ALL", Color("#9ff0c8"))
-
-func _on_resources_collected(building_id: String, amounts: Dictionary) -> void:
-	_spawn_collect_fx(building_id, amounts)
-
-func _spawn_collect_fx(building_id: String, amounts: Dictionary) -> void:
-	if not building_buttons.has(building_id):
-		return
-	var btn: Control = building_buttons[building_id]
-	var pos := btn.get_global_position() + btn.size * 0.5
-	var y_off := 0.0
-	for k in amounts.keys():
-		var col: Color = RESOURCE_COLORS.get(str(k), Color.WHITE)
-		FloatingTextScript.spawn(self, pos + Vector2(0, y_off), "+%s %s" % [int(amounts[k]), k], col)
-		y_off -= 16.0
-
-func _do_action(action_id: String) -> void:
-	_play_sfx(SFX_CLICK)
-	game.perform_building_action(selected_building, action_id)
-
-func _toggle_build() -> void:
-	_play_sfx(SFX_SWITCH)
-	_toggle_tab("build", build_panel)
-
-func _toggle_survivors() -> void:
-	_play_sfx(SFX_SWITCH)
-	_toggle_tab("survivors", survivors_panel)
-	if survivors_panel.visible:
-		_rebuild_survivor_list()
-
-func _toggle_missions() -> void:
-	_play_sfx(SFX_SWITCH)
-	_toggle_tab("missions", missions_panel)
-
-func _toggle_more() -> void:
-	_play_sfx(SFX_SWITCH)
-	_toggle_tab("more", more_panel)
-
-func _toggle_tab(name: String, panel: Control) -> void:
-	var open := not panel.visible
-	_close_all_panels()
-	if open:
-		panel.visible = true
-		sheet_panel.visible = false
-		active_tab = name
-		_layout_hud_stack()
-	else:
-		active_tab = ""
-		sheet_panel.visible = true
-		_apply_responsive_layout()
-
-func _close_all_panels() -> void:
-	build_panel.visible = false
-	survivors_panel.visible = false
-	missions_panel.visible = false
-	more_panel.visible = false
-	active_tab = ""
-	if placing_building_id != "":
-		_cancel_build_placement()
-	if move_mode:
-		_cancel_move_mode()
-	if sheet_panel:
-		sheet_panel.visible = true
-	_apply_responsive_layout()
-
-func _on_pause() -> void:
-	_play_sfx(SFX_SWITCH)
-	game.toggle_pause()
-
-func _on_speed() -> void:
-	_play_sfx(SFX_SWITCH)
-	game.cycle_time_scale()
-	_show_toast("Speed %sx" % game.time_scale)
-
-func _on_save() -> void:
-	_play_sfx(SFX_CLICK)
-	_store_layout()
-	if game.save_game():
-		_show_toast("City saved")
-	else:
-		_show_toast("Save failed")
-
-func _on_load() -> void:
-	_play_sfx(SFX_CLICK)
-	if not game.has_save():
-		_show_toast("No save found")
-		return
-	if game.load_game():
-		placing_building_id = ""
-		move_mode = false
-		_set_map_tiles_enabled(false)
-		_close_all_panels()
-		_hide_modals_except_end(false)
-		_restore_layout()
-		_center_map_on_cabin()
-		_show_toast("Loaded day %s" % game.day)
-		_refresh()
-
-func _on_new_game() -> void:
-	_play_sfx(SFX_CLICK)
-	_hide_modals_except_end(false)
-	if end_panel:
-		end_panel.visible = false
-	placing_building_id = ""
-	move_mode = false
-	building_positions = {"cabin": Vector2i(16, 12)}
-	game.start_new_game()
-	_queue_world_rebuild()
-	_center_map_on_cabin()
-	_refresh()
-
-func _toggle_move_mode() -> void:
-	_play_sfx(SFX_SWITCH)
-	placing_building_id = ""
-	move_mode = not move_mode
-	_set_map_tiles_enabled(move_mode)
-	_show_toast("Move mode ON — tap empty plot" if move_mode else "Move mode OFF")
-
-func _cancel_move_mode() -> void:
-	move_mode = false
-	_set_map_tiles_enabled(false)
-
-func _begin_build_placement(building_id: String) -> void:
-	if game.has_building(building_id):
-		selected_building = building_id
-		_refresh()
-		return
-	if not game.can_build(building_id):
-		game.add_log("Cannot place %s now." % game.building_name(building_id))
-		return
-	move_mode = false
-	placing_building_id = building_id
-	placement_cell = _initial_placement_cell()
-	build_panel.visible = false
-	survivors_panel.visible = false
-	missions_panel.visible = false
-	more_panel.visible = false
-	active_tab = ""
-	sheet_panel.visible = true
-	_set_map_tiles_enabled(true)
-	_apply_responsive_layout()
-	_update_placement_preview_for_cell(placement_cell)
-	_show_toast("Place %s — green tiles OK · Enter confirm · Esc cancel" % game.building_name(building_id))
-
-func _place_pending_building(cell: Vector2i) -> void:
-	if _is_occupied(cell):
-		_show_toast("Tile occupied — pick empty snow")
-		return
-	if _too_close_to_any(cell):
-		_show_toast("Too close to another building")
-		return
-	var building_id := placing_building_id
-	if game.build(building_id):
-		building_positions[building_id] = cell
-		selected_building = building_id
-		_queue_world_rebuild()
-		_show_toast("%s construction started" % game.building_name(building_id))
-	placing_building_id = ""
-	_set_map_tiles_enabled(false)
-
-func _cancel_build_placement() -> void:
-	placing_building_id = ""
-	_set_map_tiles_enabled(false)
-	_show_toast("Placement canceled")
-
-func _handle_map_cell_pressed(cell: Vector2i) -> void:
-	if placing_building_id != "":
-		_place_pending_building(cell)
-		return
-	if not move_mode:
-		return
-	if _is_occupied(cell) and building_positions.get(selected_building, Vector2i(-99, -99)) != cell:
-		_show_toast("Occupied")
-		return
-	# Temporarily ignore self when checking gap
-	var saved: Vector2i = building_positions.get(selected_building, cell)
-	building_positions.erase(selected_building)
-	var blocked := _too_close_to_any(cell) or _is_occupied(cell)
-	if blocked:
-		building_positions[selected_building] = saved
-		_show_toast("Need more space between buildings")
-		return
-	building_positions[selected_building] = cell
-	move_mode = false
-	_set_map_tiles_enabled(false)
-	_queue_world_rebuild()
-	_show_toast("Relocated %s" % game.building_name(selected_building))
-
-func _handle_map_detail_pressed(detail: Dictionary) -> void:
-	if move_mode or placing_building_id != "":
-		return
-	_play_sfx(SFX_CLICK)
-	game.scout_site(detail["id"], detail["reward"], detail["message"])
-
-func _placement_active() -> bool:
-	return move_mode or placing_building_id != ""
-
-func _set_map_tiles_enabled(enabled: bool) -> void:
-	for tile in map_tiles:
-		if is_instance_valid(tile):
-			tile.disabled = not enabled
-			var base: Color = tile.get_meta("base_modulate")
-			if enabled:
-				var cell: Vector2i = tile.get_meta("cell")
-				var bad := _is_occupied(cell) or _too_close_to_any(cell)
-				tile.modulate = Color(1.0, 0.55, 0.5, 0.85) if bad else Color(0.72, 1.0, 0.95, 1.0)
-			else:
-				tile.modulate = base
-	for db in map_detail_buttons:
-		if is_instance_valid(db):
-			db.mouse_filter = Control.MOUSE_FILTER_IGNORE if enabled else Control.MOUSE_FILTER_STOP
-	if placement_layer:
-		placement_layer.visible = enabled
-		placement_layer.mouse_filter = Control.MOUSE_FILTER_STOP if enabled else Control.MOUSE_FILTER_IGNORE
-	if placement_preview:
-		placement_preview.visible = enabled and placing_building_id != ""
-		if placing_building_id != "":
-			_update_placement_preview_for_cell(placement_cell)
-
-func _handle_placement_layer_input(event: InputEvent) -> void:
-	if not _placement_active():
-		return
-	if event is InputEventMouseMotion:
-		_update_placement_preview((event as InputEventMouseMotion).position)
-	elif event is InputEventMouseButton:
-		var mb := event as InputEventMouseButton
-		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			_handle_map_cell_pressed(_cell_from_pos(mb.position))
-			placement_layer.accept_event()
-	elif event is InputEventScreenDrag:
-		_update_placement_preview((event as InputEventScreenDrag).position)
-	elif event is InputEventScreenTouch:
-		var st := event as InputEventScreenTouch
-		if st.pressed:
-			_handle_map_cell_pressed(_cell_from_pos(st.position))
-			placement_layer.accept_event()
-
-func _update_placement_preview(local_pos: Vector2) -> void:
-	placement_cell = _cell_from_pos(local_pos)
-	_update_placement_preview_for_cell(placement_cell)
-
-func _update_placement_preview_for_cell(cell: Vector2i) -> void:
-	if placement_preview == null or placing_building_id == "":
-		return
-	var tex := _blueprint_texture(placing_building_id)
-	var sz := _capped_tex_size(tex, BUILDING_TEXTURE_SCALE, BUILDING_MAX_PX)
-	var center := Vector2(cell.x * TILE_PIXEL + TILE_PIXEL * 0.5, cell.y * TILE_PIXEL + TILE_PIXEL * 0.5)
-	placement_preview.texture = tex
-	placement_preview.custom_minimum_size = sz
-	placement_preview.size = sz
-	placement_preview.position = center - sz * 0.5
-	var bad := _is_occupied(cell) or _too_close_to_any(cell)
-	placement_preview.modulate = Color(1.0, 0.45, 0.4, 0.72) if bad else Color(0.65, 1.0, 1.0, 0.78)
-	placement_preview.visible = true
-
-func _initial_placement_cell() -> Vector2i:
-	return _find_open_near_cabin()
-
-func _cell_from_pos(local_pos: Vector2) -> Vector2i:
-	return Vector2i(
-		clampi(int(floor(local_pos.x / TILE_PIXEL)), 0, WORLD_COLUMNS - 1),
-		clampi(int(floor(local_pos.y / TILE_PIXEL)), 0, WORLD_ROWS - 1)
-	)
-
-func _is_occupied(cell: Vector2i) -> bool:
-	for p in building_positions.values():
-		if p == cell:
-			return true
-	# Block landmark cells so buildings don't cover POIs
-	for detail in MAP_DETAILS:
-		if detail["cell"] == cell:
-			return true
-	return false
-
-func _sync_building_positions() -> void:
-	var missing := false
-	for building_id in game.buildings.keys():
-		if not building_positions.has(building_id):
-			building_positions[building_id] = _find_open_near_cabin()
-			missing = true
-	var stale: Array[String] = []
-	for building_id in building_positions.keys():
-		if not game.has_building(building_id):
-			stale.append(building_id)
-	for building_id in stale:
-		building_positions.erase(building_id)
-		missing = true
-	# Ensure map has sprites for all buildings
-	for building_id in game.buildings.keys():
-		if not building_buttons.has(building_id):
-			missing = true
-	if missing:
-		_queue_world_rebuild()
-
-func _find_open_near_cabin() -> Vector2i:
-	var origin: Vector2i = building_positions.get("cabin", Vector2i(16, 12))
-	for r in range(MIN_BUILDING_GAP, 14):
-		for dy in range(-r, r + 1):
-			for dx in range(-r, r + 1):
-				var c := Vector2i(origin.x + dx, origin.y + dy)
-				if c.x > 2 and c.y > 2 and c.x < WORLD_COLUMNS - 3 and c.y < WORLD_ROWS - 3:
-					if not _is_occupied(c) and not _too_close_to_any(c):
-						return c
-	return Vector2i(clampi(origin.x + MIN_BUILDING_GAP, 2, WORLD_COLUMNS - 3), clampi(origin.y + MIN_BUILDING_GAP, 2, WORLD_ROWS - 3))
-
-func _too_close_to_any(cell: Vector2i) -> bool:
-	for p in building_positions.values():
-		var other: Vector2i = p
-		if absi(other.x - cell.x) < MIN_BUILDING_GAP and absi(other.y - cell.y) < MIN_BUILDING_GAP:
-			return true
-	return false
-
-func _store_layout() -> void:
-	var layout := {}
-	for building_id in building_positions.keys():
-		var cell: Vector2i = building_positions[building_id]
-		layout[building_id] = {"x": cell.x, "y": cell.y}
-	game.layout_data = {"buildings": layout}
-
-func _restore_layout() -> void:
-	building_positions = {"cabin": Vector2i(16, 12)}
-	var layout: Dictionary = game.layout_data.get("buildings", {})
-	for building_id in layout.keys():
-		if not game.has_building(building_id):
-			continue
-		var e: Dictionary = layout[building_id]
-		building_positions[building_id] = Vector2i(int(e.get("x", 16)), int(e.get("y", 12)))
-	for building_id in game.buildings.keys():
-		if not building_positions.has(building_id):
-			building_positions[building_id] = _find_open_near_cabin()
-	_queue_world_rebuild()
-
-func _queue_world_rebuild() -> void:
-	if world_rebuild_queued:
-		return
-	world_rebuild_queued = true
-	call_deferred("_rebuild_world")
-
-func _rebuild_world() -> void:
-	world_rebuild_queued = false
-	for child in world_grid.get_children():
-		child.queue_free()
-	call_deferred("_build_world_grid", world_grid)
-	call_deferred("_refresh")
-
-func _center_map_on_cabin() -> void:
-	await get_tree().process_frame
-	if map_scroll == null:
-		return
-	var cell: Vector2i = building_positions.get("cabin", Vector2i(16, 12))
-	var target := Vector2(cell.x * TILE_PIXEL - map_scroll.size.x * 0.5, cell.y * TILE_PIXEL - map_scroll.size.y * 0.4)
-	map_scroll.scroll_horizontal = int(maxi(0, int(target.x)))
-	map_scroll.scroll_vertical = int(maxi(0, int(target.y)))
-
-func _ensure_selected_building() -> void:
-	if game.has_building(selected_building):
-		return
-	for building_id in game.building_ids():
-		if game.has_building(building_id):
-			selected_building = building_id
-			return
-
-func _update_bubble_pulse() -> void:
-	var s := 1.0 + sin(_bubble_pulse * 4.0) * 0.06
-	for building_id in bubble_buttons.keys():
-		var bub: Button = bubble_buttons[building_id]
-		if is_instance_valid(bub) and bub.visible:
-			bub.scale = Vector2(s, s)
-
-func _update_storm_visuals() -> void:
-	if snow_overlay and snow_overlay.has_method("set_storm_intensity"):
-		var f := 0.0
-		if game.storm_active_days > 0:
-			f = 1.0
-		elif game.days_until_storm() <= 2:
-			f = 0.45
-		elif game.days_until_storm() <= 4:
-			f = 0.2
-		snow_overlay.set_storm_intensity(f)
-
-# =============================================================================
-# MODALS
-# =============================================================================
-
-func _build_modals() -> void:
-	modal_layer = CanvasLayer.new()
-	modal_layer.layer = 50
-	add_child(modal_layer)
-
-	tutorial_panel = _modal_shell()
-	var tb: VBoxContainer = tutorial_panel.get_meta("content")
-	tutorial_title = Label.new()
-	tutorial_title.add_theme_color_override("font_color", Color("#153247"))
-	tutorial_title.add_theme_font_size_override("font_size", 22)
-	tb.add_child(tutorial_title)
-	tutorial_body = Label.new()
-	tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	tutorial_body.add_theme_color_override("font_color", Color("#2a4a5c"))
-	tutorial_body.add_theme_font_size_override("font_size", 15)
-	tb.add_child(tutorial_body)
-	var tr := HBoxContainer.new()
-	tr.add_theme_constant_override("separation", 10)
-	tb.add_child(tr)
-	tr.add_child(_action_btn("Skip", ICON_MINUS, _on_tutorial_skip, Color("#65757c")))
-	tr.add_child(_action_btn("Next", ICON_PLUS, _on_tutorial_next, Color("#1f7fab")))
-	modal_layer.add_child(tutorial_panel)
-
-	choice_panel = _modal_shell()
-	var cb: VBoxContainer = choice_panel.get_meta("content")
-	choice_title = Label.new()
-	choice_title.add_theme_color_override("font_color", Color("#153247"))
-	choice_title.add_theme_font_size_override("font_size", 22)
-	cb.add_child(choice_title)
-	choice_body = Label.new()
-	choice_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	choice_body.add_theme_color_override("font_color", Color("#2a4a5c"))
-	choice_body.add_theme_font_size_override("font_size", 15)
-	cb.add_child(choice_body)
-	choice_buttons = VBoxContainer.new()
-	choice_buttons.add_theme_constant_override("separation", 8)
-	cb.add_child(choice_buttons)
-	modal_layer.add_child(choice_panel)
-
-	end_panel = _modal_shell()
-	var eb: VBoxContainer = end_panel.get_meta("content")
-	end_title = Label.new()
-	end_title.add_theme_color_override("font_color", Color("#153247"))
-	end_title.add_theme_font_size_override("font_size", 24)
-	eb.add_child(end_title)
-	end_body = Label.new()
-	end_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	end_body.add_theme_color_override("font_color", Color("#2a4a5c"))
-	end_body.add_theme_font_size_override("font_size", 15)
-	eb.add_child(end_body)
-	eb.add_child(_action_btn("New Settlement", ICON_PLUS, _on_new_game, Color("#1f7fab")))
-	modal_layer.add_child(end_panel)
-
-func _modal_shell() -> PanelContainer:
-	var dim := PanelContainer.new()
-	dim.visible = false
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.add_theme_stylebox_override("panel", _style(Color(0.01, 0.04, 0.08, 0.7), Color(0, 0, 0, 0), 0))
-	dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.add_child(center)
-	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(400, 0)
-	card.add_theme_stylebox_override("panel", _style(Color(0.96, 0.99, 1.0, 0.99), Color(1, 1, 1, 0.75), 14))
-	center.add_child(card)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 12)
-	card.add_child(box)
-	dim.set_meta("content", box)
-	return dim
-
-func _on_tutorial_step(_s: int, title: String, body: String) -> void:
-	tutorial_title.text = title
-	tutorial_body.text = body
-	tutorial_panel.visible = true
-
-func _on_tutorial_next() -> void:
-	_play_sfx(SFX_CLICK)
-	tutorial_panel.visible = false
-	game.advance_tutorial()
-
-func _on_tutorial_skip() -> void:
-	_play_sfx(SFX_SWITCH)
-	tutorial_panel.visible = false
-	game.skip_tutorial()
-
-func _on_choice_requested(_id: String, title: String, body: String, options: Array) -> void:
-	choice_title.text = title
-	choice_body.text = body
-	for c in choice_buttons.get_children():
+func _fill_menu() -> void:
+	for c in menu_body.get_children():
 		c.queue_free()
-	for option in options:
-		var oid := str(option.get("id", ""))
-		var btn := _action_btn(str(option.get("label", "Choose")), ICON_TARGET, _resolve_choice.bind(oid), Color("#1f6f94"))
-		btn.custom_minimum_size = Vector2(280, 48)
-		choice_buttons.add_child(btn)
-	choice_panel.visible = true
+	match menu_mode:
+		"build":
+			menu_title.text = "Build City"
+			for id in game.building_ids():
+				menu_body.add_child(_build_row(id))
+		"people":
+			menu_title.text = "Survivors"
+			var s := Label.new()
+			s.text = "Idle %s · Sick %s · Total %s · Power %s" % [
+				game.idle_survivor_count(), game.sick_survivor_count(), game.homesteaders, game.settlement_power()
+			]
+			s.add_theme_color_override("font_color", Color("#153247"))
+			s.add_theme_font_size_override("font_size", 13)
+			menu_body.add_child(s)
+			for person in game.survivor_list():
+				menu_body.add_child(_person_row(person))
+		"missions":
+			menu_title.text = "Missions"
+			for g in game.survival_goals():
+				menu_body.add_child(_goal_card(g))
+			var h := Label.new()
+			h.text = "City Log"
+			h.add_theme_color_override("font_color", Color("#153247"))
+			h.add_theme_font_size_override("font_size", 15)
+			menu_body.add_child(h)
+			for i in mini(8, game.event_log.size()):
+				menu_body.add_child(_log_card(game.event_log[i]))
+		"more":
+			menu_title.text = "Command"
+			menu_body.add_child(_btn("Save City", ICO_SAVE, Color("#356b5f"), _save))
+			menu_body.add_child(_btn("Load City", ICO_HOME, Color("#425f75"), _load))
+			menu_body.add_child(_btn("New Game", ICO_PLUS, Color("#7a4a3a"), _new_game))
+			menu_body.add_child(_btn("Expedition", ICO_TARGET, Color("#2f6b62"), func(): game.send_expedition(); _sfx(SFX_CLICK)))
+			menu_body.add_child(_btn("Stoke Furnace", ICO_WRENCH, Color("#a36a25"), func(): game.repair_hearth(); _sfx(SFX_CLICK)))
+			var tip := Label.new()
+			tip.text = "Drag map · P pause · 1/2/3 speed · C collect · Esc close\nTap buildings to open. Green + bubbles = collect."
+			tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			tip.add_theme_color_override("font_color", Color("#2a4a5c"))
+			tip.add_theme_font_size_override("font_size", 12)
+			menu_body.add_child(tip)
 
-func _resolve_choice(oid: String) -> void:
-	_play_sfx(SFX_CLICK)
-	choice_panel.visible = false
-	game.resolve_choice(oid)
-	if not game.game_over:
-		game.set_paused(false)
-
-func _on_game_ended(won: bool, summary: String) -> void:
-	end_title.text = "CITY SECURED" if won else "CITY FALLEN"
-	end_body.text = (
-		"Frostfall outlasted the whiteout. Your settlement is a true winter fortress.\n\n%s" if won
-		else "The storm and shortages broke Frostfall. Rebuild smarter.\n\n%s"
-	) % summary
-	end_panel.visible = true
-	_play_sfx(SFX_SWITCH)
-
-func _on_storm_warning(days_until: int, intensity: String) -> void:
-	_show_toast("Storm: %s in %s day(s)" % [intensity, days_until])
-
-func _hide_modals_except_end(hide_end: bool) -> void:
-	if tutorial_panel:
-		tutorial_panel.visible = false
-	if choice_panel:
-		choice_panel.visible = false
-	if hide_end and end_panel:
-		end_panel.visible = false
-
-func _show_toast(msg: String) -> void:
-	if toast_label == null:
-		return
-	toast_label.text = "  %s  " % msg
-	toast_label.visible = true
-	_toast_timer = 2.4
-
-# =============================================================================
-# WIDGETS
-# =============================================================================
-
-func _make_building_row(building_id: String) -> Dictionary:
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _style(Color(1, 1, 1, 0.92), Color(0.55, 0.73, 0.84, 0.3), 8))
+func _build_row(id: String) -> Control:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _glass(Color(1, 1, 1, 0.95), Color(0.55, 0.75, 0.88, 0.35), 10))
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	panel.add_child(row)
+	row.add_theme_constant_override("separation", 10)
+	card.add_child(row)
+
 	var icon := TextureRect.new()
-	icon.texture = _blueprint_texture(building_id)
+	icon.texture = _blueprint(id)
 	icon.custom_minimum_size = Vector2(56, 48)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	row.add_child(icon)
+
 	var info := Label.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_theme_color_override("font_color", Color("#153247"))
 	info.add_theme_font_size_override("font_size", 12)
 	row.add_child(info)
-	var minus := _icon_btn(ICON_MINUS, func() -> void: game.assign_worker(building_id, -1))
-	row.add_child(minus)
-	var plus := _icon_btn(ICON_PLUS, func() -> void: game.assign_worker(building_id, 1))
-	row.add_child(plus)
-	var upgrade := _icon_btn(ICON_WRENCH, func() -> void: game.upgrade(building_id))
-	row.add_child(upgrade)
-	var build := _action_btn("Place", ICON_PLUS, _begin_build_placement.bind(building_id), Color("#1f7fab"))
-	build.custom_minimum_size = Vector2(84, 40)
-	row.add_child(build)
-	return {"container": panel, "icon": icon, "info": info, "minus": minus, "plus": plus, "upgrade": upgrade, "build": build}
 
-func _goal_card(goal: Dictionary) -> Control:
-	var complete := bool(goal["complete"])
-	var active := bool(goal.get("active", false))
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _style(
-		Color(0.78, 1.0, 0.88, 0.8) if complete else Color(1, 1, 1, 0.85),
-		Color("#7be7aa") if complete else Color(0.6, 0.78, 0.88, 0.3), 7
+	if game.has_building(id):
+		var b: Dictionary = game.buildings[id]
+		info.text = "%s  Lv.%s\n%s/%s crew · %s%% HP\n%s" % [
+			b["name"], b["level"], b["workers"], b["max_workers"], int(b["condition"]),
+			game.building_status_text(id)
+		]
+		icon.modulate = Color.WHITE
+		var open := _btn("Open", ICO_HOME, Color("#1f7fab"), func():
+			_close_menu()
+			_open_sheet(id)
+		)
+		open.custom_minimum_size = Vector2(80, 40)
+		row.add_child(open)
+		var up := _icon(ICO_WRENCH, func(): game.upgrade(id); _sfx(SFX_CLICK))
+		up.disabled = not game.can_upgrade(id)
+		row.add_child(up)
+	else:
+		info.text = "%s\n%s\n%s" % [game.building_name(id), game.building_status_text(id), _fmt_cost(game.build_cost(id))]
+		icon.modulate = Color(0.7, 0.82, 0.9, 0.7)
+		var place := _btn("Place", ICO_PLUS if game.is_building_unlocked(id) else ICO_LOCK, Color("#1f7fab"), func():
+			_begin_place(id)
+		)
+		place.custom_minimum_size = Vector2(88, 40)
+		place.disabled = not game.can_build(id)
+		row.add_child(place)
+	return card
+
+func _person_row(p: Dictionary) -> Control:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _glass(Color(1, 1, 1, 0.95), Color(0.55, 0.75, 0.88, 0.3), 10))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	card.add_child(row)
+	var info := Label.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.text = "%s\n%s · HP %s%%" % [p["name"], p.get("role", "Idle"), int(p.get("health", 100))]
+	info.add_theme_color_override("font_color", Color("#153247"))
+	info.add_theme_font_size_override("font_size", 12)
+	row.add_child(info)
+	var sid := int(p["id"])
+	var idle := _btn("Idle", ICO_MINUS, Color("#5a6a73"), func(): game.assign_survivor(sid, ""); _sfx(SFX_TAP))
+	idle.custom_minimum_size = Vector2(70, 36)
+	idle.disabled = str(p.get("building_id", "")) == ""
+	row.add_child(idle)
+	var job := _btn("Assign", ICO_PLUS, Color("#1f7fab"), func():
+		if sheet_open:
+			game.assign_survivor(sid, selected)
+		else:
+			game.assign_survivor(sid, "cabin")
+		_sfx(SFX_TAP)
+	)
+	job.custom_minimum_size = Vector2(80, 36)
+	row.add_child(job)
+	return card
+
+func _goal_card(g: Dictionary) -> Control:
+	var done := bool(g["complete"])
+	var active := bool(g.get("active", false))
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _glass(
+		Color(0.78, 1.0, 0.88, 0.9) if done else Color(1, 1, 1, 0.95),
+		Color("#7be7aa") if done else Color(0.55, 0.75, 0.88, 0.3), 10
 	))
 	var box := VBoxContainer.new()
-	panel.add_child(box)
+	card.add_child(box)
 	var t := Label.new()
-	t.text = "%s %s" % ["✓" if complete else ("▶" if active else "·"), goal["title"]]
-	t.add_theme_color_override("font_color", Color("#0d4b35") if complete else Color("#123247"))
+	t.text = "%s %s" % ["✓" if done else ("▶" if active else "·"), g["title"]]
+	t.add_theme_color_override("font_color", Color("#0d4b35") if done else Color("#123247"))
 	t.add_theme_font_size_override("font_size", 13)
 	box.add_child(t)
 	var d := Label.new()
-	d.text = "%s\n%s\n%s" % [goal.get("chapter_title", ""), goal["detail"], goal["progress"]]
+	d.text = "%s\n%s\n%s" % [g.get("chapter_title", ""), g["detail"], g["progress"]]
 	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	d.add_theme_color_override("font_color", Color("#3c6b58") if complete else Color("#315265"))
+	d.add_theme_color_override("font_color", Color("#3c6b58") if done else Color("#315265"))
 	d.add_theme_font_size_override("font_size", 11)
 	box.add_child(d)
-	return panel
+	return card
 
-func _event_card(msg: String, index: int) -> Control:
-	var panel := PanelContainer.new()
-	var a := 0.85 - minf(float(index) * 0.07, 0.35)
-	panel.add_theme_stylebox_override("panel", _style(Color(0.05, 0.16, 0.24, a), Color(0.5, 0.8, 1.0, 0.2), 6))
+func _log_card(msg: String) -> Control:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _glass(Color(0.06, 0.16, 0.24, 0.92), Color(0.5, 0.8, 1.0, 0.2), 8))
 	var l := Label.new()
 	l.text = msg
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.add_theme_color_override("font_color", Color("#d8edf7"))
 	l.add_theme_font_size_override("font_size", 12)
-	panel.add_child(l)
-	return panel
+	card.add_child(l)
+	return card
 
-func _chip(text: String) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	l.custom_minimum_size = Vector2(52, 26)
-	l.add_theme_color_override("font_color", Color("#eef8ff"))
-	l.add_theme_font_size_override("font_size", 11)
-	l.add_theme_stylebox_override("normal", _style(Color(0.08, 0.22, 0.32, 0.95), Color(0.6, 0.9, 1.0, 0.3), 6))
-	return l
+# =============================================================================
+# ACTIONS
+# =============================================================================
 
-func _named_bar(tip: String, fill: Color) -> ProgressBar:
-	var p := ProgressBar.new()
-	p.min_value = 0
-	p.max_value = 100
-	p.show_percentage = true
-	p.tooltip_text = tip
-	p.custom_minimum_size = Vector2(100, 28)
-	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	p.add_theme_stylebox_override("background", _meter_bg())
-	p.add_theme_stylebox_override("fill", _meter_fill(fill))
-	p.add_theme_color_override("font_color", Color("#f7fbff"))
-	p.add_theme_font_size_override("font_size", 10)
-	return p
-
-func _nav_btn(text: String, icon: Texture2D, color: Color, cb: Callable) -> Button:
-	var b := _action_btn(text, icon, cb, color)
-	b.custom_minimum_size = Vector2(0, 52)
-	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.add_theme_font_size_override("font_size", 12)
-	return b
-
-func _action_btn(text: String, icon: Texture2D, cb: Callable, color: Color) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.icon = icon
-	b.expand_icon = true
-	b.custom_minimum_size = Vector2(120, 44)
-	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.add_theme_stylebox_override("normal", _btn_style(color))
-	b.add_theme_stylebox_override("hover", _btn_style(color.lightened(0.12)))
-	b.add_theme_stylebox_override("pressed", _btn_style(color.darkened(0.12)))
-	b.add_theme_stylebox_override("disabled", _btn_style(Color("#5a6a73")))
-	b.add_theme_color_override("font_color", Color.WHITE)
-	b.add_theme_font_size_override("font_size", 13)
-	b.pressed.connect(cb)
-	return b
-
-func _icon_btn(icon: Texture2D, cb: Callable) -> Button:
-	var b := Button.new()
-	b.icon = icon
-	b.expand_icon = true
-	b.custom_minimum_size = Vector2(40, 36)
-	b.add_theme_stylebox_override("normal", _btn_style(Color("#1d6d93")))
-	b.add_theme_stylebox_override("hover", _btn_style(Color("#2588b4")))
-	b.add_theme_stylebox_override("pressed", _btn_style(Color("#165675")))
-	b.add_theme_stylebox_override("disabled", _btn_style(Color("#65757c")))
-	b.pressed.connect(cb)
-	return b
-
-func _style(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.border_color = border
-	s.set_border_width_all(1)
-	s.set_corner_radius_all(radius)
-	s.content_margin_left = 10
-	s.content_margin_top = 8
-	s.content_margin_right = 10
-	s.content_margin_bottom = 8
-	s.shadow_color = Color(0, 0.04, 0.08, 0.25)
-	s.shadow_size = 6
-	s.shadow_offset = Vector2(0, 3)
-	return s
-
-func _btn_style(bg: Color) -> StyleBoxFlat:
-	var s := _style(bg, Color(1, 1, 1, 0.28), 8)
-	s.content_margin_left = 8
-	s.content_margin_top = 6
-	s.content_margin_right = 8
-	s.content_margin_bottom = 6
-	return s
-
-func _meter_bg() -> StyleBoxFlat:
-	return _style(Color(0.04, 0.11, 0.17, 0.75), Color(0.5, 0.8, 1.0, 0.15), 6)
-
-func _meter_fill(c: Color) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = c
-	s.set_corner_radius_all(6)
-	return s
-
-func _badge(bg: Color) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.border_color = Color(1, 1, 1, 0.5)
-	s.set_border_width_all(1)
-	s.set_corner_radius_all(5)
-	s.content_margin_left = 4
-	s.content_margin_right = 4
-	s.content_margin_top = 1
-	s.content_margin_bottom = 1
-	return s
-
-func _building_texture(building_id: String) -> Texture2D:
-	var opts: Array = BUILDING_SPRITES[building_id]
-	var level := int(game.buildings[building_id]["level"]) if game.has_building(building_id) else 1
-	return opts[clampi(level - 1, 0, opts.size() - 1)]
-
-func _blueprint_texture(building_id: String) -> Texture2D:
-	return BUILDING_SPRITES[building_id][0]
-
-func _tex_size(tex: Texture2D, scale: float) -> Vector2:
-	return Vector2(tex.get_width(), tex.get_height()) * scale
-
-func _capped_tex_size(tex: Texture2D, scale: float, max_px: float) -> Vector2:
-	var size := _tex_size(tex, scale)
-	var longest := maxf(size.x, size.y)
-	if longest > max_px and longest > 0.0:
-		size *= max_px / longest
-	return size
-
-func _on_map_gui_input(event: InputEvent) -> void:
-	if placing_building_id != "" or move_mode:
+func _tap_building(id: String) -> void:
+	_sfx(SFX_TAP)
+	if game.bubble_total(id) >= 1.0 and selected == id and sheet_open:
+		_collect_building(id)
 		return
-	if event is InputEventMouseButton:
-		var mb := event as InputEventMouseButton
-		if mb.button_index == MOUSE_BUTTON_LEFT:
-			if mb.pressed:
-				_map_dragging = true
-				_map_drag_last = mb.position
+	_open_sheet(id)
+
+func _open_sheet(id: String) -> void:
+	if not game.has_building(id):
+		return
+	selected = id
+	sheet_open = true
+	sheet.visible = true
+	sheet_dim.visible = true
+	fab_collect.visible = false
+	_refresh_sheet()
+	_layout()
+
+func _close_sheet() -> void:
+	sheet_open = false
+	sheet.visible = false
+	sheet_dim.visible = false
+	if move_mode:
+		_cancel_move()
+	_layout()
+	_refresh()
+
+func _collect_building(id: String) -> void:
+	_sfx(SFX_COLLECT)
+	var gained := game.collect_from_building(id)
+	if gained.is_empty():
+		return
+	_fx(id, gained)
+
+func _collect_selected() -> void:
+	_collect_building(selected)
+
+func _collect_all() -> void:
+	_sfx(SFX_COLLECT)
+	var gained := game.collect_all()
+	if gained.is_empty():
+		_toast("Nothing to collect")
+		return
+	var parts: Array[String] = []
+	for k in gained.keys():
+		parts.append("+%s %s" % [int(gained[k]), k])
+	_toast("Collected " + ", ".join(parts))
+	if bld_btns.has("cabin"):
+		FloatingTextScript.spawn(self, bld_btns["cabin"].get_global_position() + bld_btns["cabin"].size * 0.5, "COLLECT", Color("#9ff0c8"))
+
+func _on_collected(id: String, amounts: Dictionary) -> void:
+	_fx(id, amounts)
+
+func _fx(id: String, amounts: Dictionary) -> void:
+	if not bld_btns.has(id):
+		return
+	var b: Control = bld_btns[id]
+	var pos := b.get_global_position() + b.size * 0.5
+	var y := 0.0
+	for k in amounts.keys():
+		FloatingTextScript.spawn(self, pos + Vector2(0, y), "+%s %s" % [int(amounts[k]), k], RES_COLOR.get(str(k), Color.WHITE))
+		y -= 16.0
+
+func _toggle_move() -> void:
+	_sfx(SFX_SWITCH)
+	placing = ""
+	move_mode = not move_mode
+	_set_place_tiles(move_mode)
+	_toast("Tap empty snow to move" if move_mode else "Move canceled")
+
+func _cancel_move() -> void:
+	move_mode = false
+	_set_place_tiles(false)
+
+func _begin_place(id: String) -> void:
+	if game.has_building(id):
+		_close_menu()
+		_open_sheet(id)
+		return
+	if not game.can_build(id):
+		_toast("Can't place that yet")
+		return
+	_sfx(SFX_SWITCH)
+	_close_menu()
+	move_mode = false
+	placing = id
+	place_cell = _find_spot()
+	_set_place_tiles(true)
+	_update_place_preview(place_cell)
+	_toast("Place %s — green OK · Enter confirm" % game.building_name(id))
+
+func _cancel_place() -> void:
+	placing = ""
+	_set_place_tiles(false)
+	_toast("Placement canceled")
+
+func _commit_cell(cell: Vector2i) -> void:
+	if placing != "":
+		if _blocked(cell) or _too_close(cell):
+			_toast("Need clear space")
+			return
+		var id := placing
+		if game.build(id):
+			positions[id] = cell
+			selected = id
+			_queue_world()
+			_toast("%s building…" % game.building_name(id))
+			call_deferred("_open_sheet", id)
+		placing = ""
+		_set_place_tiles(false)
+		return
+	if move_mode:
+		var saved: Vector2i = positions.get(selected, cell)
+		positions.erase(selected)
+		if _blocked(cell) or _too_close(cell):
+			positions[selected] = saved
+			_toast("Need clear space")
+			return
+		positions[selected] = cell
+		move_mode = false
+		_set_place_tiles(false)
+		_queue_world()
+		_toast("Moved %s" % game.building_name(selected))
+
+func _set_place_tiles(on: bool) -> void:
+	for t in tiles:
+		if not is_instance_valid(t):
+			continue
+		t.disabled = not on
+		var base: Color = t.get_meta("base")
+		if on:
+			var cell: Vector2i = t.get_meta("cell")
+			var bad := false
+			if move_mode:
+				var saved_pos: Vector2i = positions.get(selected, Vector2i(-99, -99))
+				var occupied_other := false
+				for id in positions.keys():
+					if id != selected and positions[id] == cell:
+						occupied_other = true
+						break
+				for p in POIS:
+					if p["cell"] == cell:
+						occupied_other = true
+						break
+				bad = occupied_other or _too_close_except(cell, selected)
+				if saved_pos == cell:
+					bad = false
 			else:
-				_map_dragging = false
+				bad = _blocked(cell) or _too_close(cell)
+			t.modulate = Color(1.0, 0.55, 0.5, 0.85) if bad else Color(0.7, 1.0, 0.95, 1.0)
+		else:
+			t.modulate = base
+	for p in poi_btns:
+		if is_instance_valid(p):
+			p.mouse_filter = Control.MOUSE_FILTER_IGNORE if on else Control.MOUSE_FILTER_STOP
+	if place_layer:
+		place_layer.visible = on
+		place_layer.mouse_filter = Control.MOUSE_FILTER_STOP if on else Control.MOUSE_FILTER_IGNORE
+	if place_preview:
+		place_preview.visible = on and placing != ""
+
+func _place_input(ev: InputEvent) -> void:
+	if not _placing():
+		return
+	if ev is InputEventMouseMotion:
+		_update_place_preview(_cell((ev as InputEventMouseMotion).position))
+	elif ev is InputEventMouseButton:
+		var mb := ev as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			_commit_cell(_cell(mb.position))
+			place_layer.accept_event()
+	elif ev is InputEventScreenDrag:
+		_update_place_preview(_cell((ev as InputEventScreenDrag).position))
+	elif ev is InputEventScreenTouch:
+		var st := ev as InputEventScreenTouch
+		if st.pressed:
+			_commit_cell(_cell(st.position))
+			place_layer.accept_event()
+
+func _update_place_preview(cell: Vector2i) -> void:
+	place_cell = cell
+	if place_preview == null or placing == "":
+		return
+	var tex := _blueprint(placing)
+	var sz := _cap(tex, 0.32, BLD_MAX)
+	var center := Vector2(cell.x * TILE + TILE * 0.5, cell.y * TILE + TILE * 0.5)
+	place_preview.texture = tex
+	place_preview.custom_minimum_size = sz
+	place_preview.size = sz
+	place_preview.position = center - sz * 0.5
+	var bad := _blocked(cell) or _too_close(cell)
+	place_preview.modulate = Color(1.0, 0.45, 0.4, 0.7) if bad else Color(0.65, 1.0, 1.0, 0.78)
+	place_preview.visible = true
+
+func _placing() -> bool:
+	return placing != "" or move_mode
+
+func _blocked(cell: Vector2i) -> bool:
+	for p in positions.values():
+		if p == cell:
+			return true
+	for p in POIS:
+		if p["cell"] == cell:
+			return true
+	return false
+
+func _too_close(cell: Vector2i) -> bool:
+	return _too_close_except(cell, "" if placing != "" else selected)
+
+func _too_close_except(cell: Vector2i, except_id: String) -> bool:
+	for id in positions.keys():
+		if except_id != "" and id == except_id:
+			continue
+		var o: Vector2i = positions[id]
+		if absi(o.x - cell.x) < GAP and absi(o.y - cell.y) < GAP:
+			return true
+	return false
+
+func _find_spot() -> Vector2i:
+	var origin: Vector2i = positions.get("cabin", Vector2i(13, 12))
+	for r in range(GAP, 12):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				var c := Vector2i(origin.x + dx, origin.y + dy)
+				if c.x > 2 and c.y > 2 and c.x < COLS - 3 and c.y < ROWS - 3:
+					if not _blocked(c) and not _too_close(c):
+						return c
+	return Vector2i(origin.x + GAP, origin.y + GAP)
+
+func _cell(pos: Vector2) -> Vector2i:
+	return Vector2i(
+		clampi(int(floor(pos.x / TILE)), 0, COLS - 1),
+		clampi(int(floor(pos.y / TILE)), 0, ROWS - 1)
+	)
+
+func _sync_positions() -> void:
+	var miss := false
+	for id in game.buildings.keys():
+		if not positions.has(id):
+			positions[id] = _find_spot()
+			miss = true
+	var stale: Array[String] = []
+	for id in positions.keys():
+		if not game.has_building(id):
+			stale.append(id)
+	for id in stale:
+		positions.erase(id)
+		miss = true
+	for id in game.buildings.keys():
+		if not bld_btns.has(id):
+			miss = true
+	if miss:
+		_queue_world()
+
+func _queue_world() -> void:
+	if rebuild_world_q:
+		return
+	rebuild_world_q = true
+	call_deferred("_do_rebuild_world")
+
+func _do_rebuild_world() -> void:
+	rebuild_world_q = false
+	_rebuild_world()
+	_refresh()
+
+func _ensure_selected() -> void:
+	if game.has_building(selected):
+		return
+	for id in game.building_ids():
+		if game.has_building(id):
+			selected = id
+			return
+
+func _center_city() -> void:
+	await get_tree().process_frame
+	if map_scroll == null:
+		return
+	var c: Vector2i = positions.get("cabin", Vector2i(13, 12))
+	map_scroll.scroll_horizontal = maxi(0, int(c.x * TILE - map_scroll.size.x * 0.5))
+	map_scroll.scroll_vertical = maxi(0, int(c.y * TILE - map_scroll.size.y * 0.45))
+
+func _map_input(ev: InputEvent) -> void:
+	if _placing():
+		return
+	if ev is InputEventMouseButton:
+		var mb := ev as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			drag = mb.pressed
+			drag_last = mb.position
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP:
-			map_scroll.scroll_vertical -= 48
+			map_scroll.scroll_vertical -= 56
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			map_scroll.scroll_vertical += 48
-	elif event is InputEventMouseMotion and _map_dragging:
-		var mm := event as InputEventMouseMotion
-		var delta: Vector2 = _map_drag_last - mm.position
-		map_scroll.scroll_horizontal += int(delta.x)
-		map_scroll.scroll_vertical += int(delta.y)
-		_map_drag_last = mm.position
-	elif event is InputEventScreenDrag:
-		var sd := event as InputEventScreenDrag
+			map_scroll.scroll_vertical += 56
+	elif ev is InputEventMouseMotion and drag:
+		var mm := ev as InputEventMouseMotion
+		var d: Vector2 = drag_last - mm.position
+		map_scroll.scroll_horizontal += int(d.x)
+		map_scroll.scroll_vertical += int(d.y)
+		drag_last = mm.position
+	elif ev is InputEventScreenDrag:
+		var sd := ev as InputEventScreenDrag
 		map_scroll.scroll_horizontal -= int(sd.relative.x)
 		map_scroll.scroll_vertical -= int(sd.relative.y)
 
-func _layout_hud_stack() -> void:
-	if not ui_ready or top_bar == null:
-		return
-	# Force top bar to size to content
-	top_bar.reset_size()
-	var top_h := maxf(top_bar.get_combined_minimum_size().y, top_bar.size.y)
-	if top_h < 90.0:
-		top_h = 96.0
-	top_bar.offset_bottom = HUD_MARGIN + top_h
-	_hud_bottom = HUD_MARGIN + top_h + 4.0
+func _pulse_bubbles() -> void:
+	var s := 1.0 + sin(pulse * 4.0) * 0.07
+	for id in bld_bubbles.keys():
+		var b: Button = bld_bubbles[id]
+		if is_instance_valid(b) and b.visible:
+			b.scale = Vector2(s, s)
 
-	var y := _hud_bottom
-	if storm_banner and storm_banner.visible:
-		storm_banner.offset_top = y
-		storm_banner.offset_bottom = y + 30.0
-		y += 34.0
-	if mission_strip:
-		mission_strip.offset_top = y
-		mission_strip.offset_bottom = y + 36.0
-		y += 40.0
+func _store_layout() -> void:
+	var layout := {}
+	for id in positions.keys():
+		var c: Vector2i = positions[id]
+		layout[id] = {"x": c.x, "y": c.y}
+	game.layout_data = {"buildings": layout}
 
-	# Side panels sit under HUD stack, above nav
-	for panel in [build_panel, survivors_panel, missions_panel, more_panel]:
-		if panel == null:
+func _restore_layout() -> void:
+	positions = {"cabin": Vector2i(13, 12)}
+	var layout: Dictionary = game.layout_data.get("buildings", {})
+	for id in layout.keys():
+		if not game.has_building(id):
 			continue
-		panel.offset_top = y + 4.0
-		panel.offset_bottom = -(NAV_HEIGHT + HUD_MARGIN)
+		var e: Dictionary = layout[id]
+		positions[id] = Vector2i(int(e.get("x", 13)), int(e.get("y", 12)))
+	for id in game.buildings.keys():
+		if not positions.has(id):
+			positions[id] = _find_spot()
+	_queue_world()
 
-	# Toast just under mission strip
-	if toast_label:
-		toast_label.offset_top = y + 6.0
-		toast_label.offset_bottom = y + 34.0
+func _save() -> void:
+	_sfx(SFX_CLICK)
+	_store_layout()
+	_toast("City saved" if game.save_game() else "Save failed")
+
+func _load() -> void:
+	_sfx(SFX_CLICK)
+	if not game.has_save():
+		_toast("No save found")
+		return
+	if game.load_game():
+		placing = ""
+		move_mode = false
+		_set_place_tiles(false)
+		_close_menu()
+		_close_sheet()
+		if tutorial_panel:
+			tutorial_panel.visible = false
+		if choice_panel:
+			choice_panel.visible = false
+		if end_panel:
+			end_panel.visible = false
+		_restore_layout()
+		call_deferred("_center_city")
+		_toast("Loaded day %s" % game.day)
+		_refresh()
+
+func _new_game() -> void:
+	_sfx(SFX_CLICK)
+	if tutorial_panel:
+		tutorial_panel.visible = false
+	if choice_panel:
+		choice_panel.visible = false
+	if end_panel:
+		end_panel.visible = false
+	placing = ""
+	move_mode = false
+	_set_place_tiles(false)
+	_close_menu()
+	_close_sheet()
+	positions = {"cabin": Vector2i(13, 12)}
+	game.start_new_game()
+	_queue_world()
+	call_deferred("_center_city")
+	_refresh()
+
+func _on_tutorial(_s: int, title: String, body: String) -> void:
+	tutorial_title.text = title
+	tutorial_body.text = body
+	tutorial_panel.visible = true
+
+func _on_choice(_id: String, title: String, body: String, options: Array) -> void:
+	choice_title.text = title
+	choice_body.text = body
+	for c in choice_btns.get_children():
+		c.queue_free()
+	for o in options:
+		var oid := str(o.get("id", ""))
+		var b := _btn(str(o.get("label", "Choose")), ICO_TARGET, Color("#1f6f94"), func():
+			_sfx(SFX_CLICK)
+			choice_panel.visible = false
+			game.resolve_choice(oid)
+			if not game.game_over:
+				game.set_paused(false)
+		)
+		b.custom_minimum_size = Vector2(280, 48)
+		choice_btns.add_child(b)
+	choice_panel.visible = true
+
+func _on_end(won: bool, summary: String) -> void:
+	end_title.text = "CITY SECURED" if won else "CITY FALLEN"
+	end_body.text = (
+		"Frostfall outlasted the whiteout.\n\n%s" if won else "The storm broke Frostfall.\n\n%s"
+	) % summary
+	end_panel.visible = true
+	_sfx(SFX_SWITCH)
+
+func _toast(msg: String) -> void:
+	if toast == null:
+		return
+	toast.text = "  %s  " % msg
+	toast.visible = true
+	toast_t = 2.3
+
+func _sfx(stream: AudioStream) -> void:
+	if sfx == null or game == null or not game.sfx_enabled:
+		return
+	sfx.stream = stream
+	sfx.play()
+
+# =============================================================================
+# WIDGETS
+# =============================================================================
+
+func _spr(id: String) -> Texture2D:
+	var opts: Array = SPRITES[id]
+	var lvl := int(game.buildings[id]["level"]) if game.has_building(id) else 1
+	return opts[clampi(lvl - 1, 0, opts.size() - 1)]
+
+func _blueprint(id: String) -> Texture2D:
+	return SPRITES[id][0]
+
+func _cap(tex: Texture2D, scale: float, max_px: float) -> Vector2:
+	var s := Vector2(tex.get_width(), tex.get_height()) * scale
+	var m := maxf(s.x, s.y)
+	if m > max_px and m > 0.0:
+		s *= max_px / m
+	return s
 
 func _fmt_prod(prod: Dictionary) -> String:
 	var parts: Array[String] = []
 	for k in prod.keys():
 		if str(k) == "heat_gen":
 			continue
-		parts.append("+%.1f %s/day" % [float(prod[k]), k])
+		parts.append("+%.1f %s/d" % [float(prod[k]), k])
 	return ", ".join(parts) if not parts.is_empty() else "support"
 
 func _fmt_cost(cost: Dictionary) -> String:
@@ -2033,50 +1731,103 @@ func _fmt_cost(cost: Dictionary) -> String:
 			parts.append("%s %s" % [int(cost[k]), k])
 	return ", ".join(parts) if not parts.is_empty() else "free"
 
-func _play_sfx(stream: AudioStream) -> void:
-	if sfx_player == null or game == null or not game.sfx_enabled:
-		return
-	sfx_player.stream = stream
-	sfx_player.play()
-
-func _style_tight(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
-	var s := _style(bg, border, radius)
-	s.content_margin_left = 6
-	s.content_margin_top = 4
-	s.content_margin_right = 6
-	s.content_margin_bottom = 4
-	s.shadow_size = 2
-	s.shadow_offset = Vector2(0, 1)
+func _glass(bg: Color, border: Color, radius: int) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = border
+	s.set_border_width_all(1)
+	s.set_corner_radius_all(radius)
+	s.content_margin_left = 12
+	s.content_margin_top = 10
+	s.content_margin_right = 12
+	s.content_margin_bottom = 10
+	s.shadow_color = Color(0, 0.04, 0.08, 0.28)
+	s.shadow_size = 8
+	s.shadow_offset = Vector2(0, 3)
 	return s
 
-func _apply_responsive_layout() -> void:
-	if not ui_ready:
-		return
-	var sz := get_viewport_rect().size
-	compact_layout = sz.x < 900.0 or sz.y > sz.x
+func _pill(bg: Color) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.set_corner_radius_all(6)
+	s.content_margin_left = 4
+	s.content_margin_right = 4
+	s.content_margin_top = 1
+	s.content_margin_bottom = 1
+	return s
 
-	bottom_nav.offset_top = -NAV_HEIGHT
-	bottom_nav.offset_bottom = -HUD_MARGIN
-	bottom_nav.offset_left = HUD_MARGIN
-	bottom_nav.offset_right = -HUD_MARGIN
+func _bar(fill: Color, tip: String) -> ProgressBar:
+	var p := ProgressBar.new()
+	p.min_value = 0
+	p.max_value = 100
+	p.show_percentage = true
+	p.tooltip_text = tip
+	p.custom_minimum_size = Vector2(70, 20)
+	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	p.add_theme_stylebox_override("background", _glass(Color(0.04, 0.1, 0.15, 0.8), Color(0.4, 0.7, 0.9, 0.15), 6))
+	var f := StyleBoxFlat.new()
+	f.bg_color = fill
+	f.set_corner_radius_all(6)
+	p.add_theme_stylebox_override("fill", f)
+	p.add_theme_color_override("font_color", Color("#f7fbff"))
+	p.add_theme_font_size_override("font_size", 9)
+	return p
 
-	var sheet_h := SHEET_HEIGHT_COMPACT if compact_layout else SHEET_HEIGHT_DESKTOP
-	# Sheet sits above nav with a small gap
-	var sheet_bottom := NAV_HEIGHT + 4.0
-	sheet_panel.offset_left = HUD_MARGIN
-	sheet_panel.offset_right = -HUD_MARGIN
-	if _sheet_open and active_tab == "":
-		sheet_panel.visible = true
-		sheet_panel.offset_top = -(sheet_h + sheet_bottom)
-		sheet_panel.offset_bottom = -sheet_bottom
-	elif active_tab != "":
-		sheet_panel.visible = false
-	else:
-		sheet_panel.visible = true
-		sheet_panel.offset_top = -(sheet_h + sheet_bottom)
-		sheet_panel.offset_bottom = -sheet_bottom
+func _btn(text: String, icon: Texture2D, color: Color, cb: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.icon = icon
+	b.expand_icon = true
+	b.custom_minimum_size = Vector2(120, 44)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.add_theme_stylebox_override("normal", _glass(color, Color(1, 1, 1, 0.28), 10))
+	b.add_theme_stylebox_override("hover", _glass(color.lightened(0.12), Color(1, 1, 1, 0.4), 10))
+	b.add_theme_stylebox_override("pressed", _glass(color.darkened(0.12), Color(1, 1, 1, 0.2), 10))
+	b.add_theme_stylebox_override("disabled", _glass(Color("#5a6a73"), Color(1, 1, 1, 0.12), 10))
+	b.add_theme_color_override("font_color", Color.WHITE)
+	b.add_theme_font_size_override("font_size", 13)
+	b.pressed.connect(cb)
+	return b
 
-	if ability_scroll:
-		ability_scroll.custom_minimum_size = Vector2(0, 64 if compact_layout else 78)
+func _icon(icon: Texture2D, cb: Callable) -> Button:
+	var b := Button.new()
+	b.icon = icon
+	b.expand_icon = true
+	b.custom_minimum_size = Vector2(40, 36)
+	b.add_theme_stylebox_override("normal", _glass(Color("#1d6d93"), Color(1, 1, 1, 0.25), 8))
+	b.add_theme_stylebox_override("hover", _glass(Color("#2588b4"), Color(1, 1, 1, 0.35), 8))
+	b.add_theme_stylebox_override("pressed", _glass(Color("#165675"), Color(1, 1, 1, 0.2), 8))
+	b.add_theme_stylebox_override("disabled", _glass(Color("#65757c"), Color(1, 1, 1, 0.12), 8))
+	b.pressed.connect(cb)
+	return b
 
-	_layout_hud_stack()
+func _dock_btn(text: String, icon: Texture2D, color: Color, cb: Callable) -> Button:
+	var b := _btn(text, icon, color, cb)
+	b.custom_minimum_size = Vector2(0, 58)
+	b.add_theme_font_size_override("font_size", 12)
+	return b
+
+func _mlabel(size: int, color: Color) -> Label:
+	var l := Label.new()
+	l.add_theme_color_override("font_color", color)
+	l.add_theme_font_size_override("font_size", size)
+	return l
+
+func _modal() -> PanelContainer:
+	var dim := PanelContainer.new()
+	dim.visible = false
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.add_theme_stylebox_override("panel", _glass(Color(0.01, 0.04, 0.08, 0.72), Color(0, 0, 0, 0), 0))
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.add_child(center)
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(380, 0)
+	card.add_theme_stylebox_override("panel", _glass(Color(0.97, 0.99, 1.0, 0.99), Color(1, 1, 1, 0.75), 16))
+	center.add_child(card)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	card.add_child(box)
+	dim.set_meta("box", box)
+	return dim
