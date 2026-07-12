@@ -1,61 +1,28 @@
-# Frostfall Homestead
+# Frostfall Homestead — Design Direction
 
-Frostfall Homestead is a mobile survival-settlement game inspired by the cold-pressure city loop of Whiteout Survival, but centered on homesteading instead of industrial apocalypse fantasy.
+Whiteout Survival–style mobile survival city-builder: furnace heat, survivor labor, collectible production, blizzards, and settlement growth.
 
-## Core Loop
+## Pillars
 
-1. Assign families to homestead jobs: woodlot, garden, well, workshop, cabin upkeep, root cellar, smokehouse, and coop.
-2. Produce daily supplies while winter pressure consumes food, water, and firewood.
-3. Upgrade buildings to improve production and worker capacity (construction/upgrade timers).
-4. Send expeditions and scout map landmarks for seed, food, tools, and morale.
-5. Keep morale and hearth heat high enough to survive deeper winter and complete chapter goals.
+1. **Furnace is life** — heat and fuel are the emotional core of every session.
+2. **Map is the toy** — bubbles, badges, storms, and buildings call for taps.
+3. **People matter** — named survivors with health and jobs, not pure abstract sliders.
+4. **Winter pressure** — seasons, storm calendar, spoilage, and shortages create tension.
+5. **Readable mobile UI** — top resources, mission strip, bottom nav, building sheet.
 
-## Theme Pillars
+## Loop
 
-- Homesteads, family labor, preserving food, seed saving, livestock, hand tools, and seasonal planning.
-- Threats should feel grounded: blizzards, failed crops, illness, predators, broken wells, and supply shortages.
-- Progression should grow from cabin cluster to durable valley settlement.
+Collect → Assign → Build/Upgrade → Stoke furnace → Endure events/storms → Mission rewards → Expand.
 
-## Implemented Systems
+## Content set (release)
 
-- Save / load / auto-save (`user://frostfall_save.json`) with building layout.
-- First-run tutorial with skip.
-- Pause and time scale (0.5×–3×).
-- Tile map placement, move mode, level-based sprites, construction progress badges.
-- Root cellar (spoilage reduction), smokehouse (preserved food), chicken coop (food + morale).
-- Seasonal progression (Early → Late Winter) with pressure scaling.
-- Scripted choice events on days 3, 8, and 12.
-- Victory (Chapter 5 goals + day 14 + power 160) and defeat screens.
-- Population growth when stores and morale stay healthy.
-- UI sound feedback (Kenney UI pack).
+- 13 buildings across core / production / support / defense
+- 5 chapters, 20 missions
+- Scripted choices (days 3, 6, 9, 12)
+- Storm calendar (gale / whiteout)
+- Landmarks, expeditions, offline catch-up
+- Victory at Ch.5 + day 14 + power 180
 
-## Suggested Next Systems
+## Visual
 
-- Animated workers and collection bubbles on the map.
-- Livestock illness / fox raid micro-events with more choices.
-- iOS / Android export presets, icons, splash screens, and safe-area tuning.
-- Local multiplayer ghost settlements or daily challenge seeds.
-- Accessibility: colorblind resource markers and scalable UI text.
-
-## Asset Source
-
-- Kenney Tiny Town: https://kenney.nl/assets/tiny-town (CC0)
-- Kenney UI Pack: https://kenney.nl/assets/ui-pack (CC0)
-- Kenney Game Icons: https://kenney.nl/assets/game-icons (CC0)
-- Kenney Tiny Ski: https://kenney.nl/assets/tiny-ski (CC0)
-- User-provided building upgrade sheet: `assets/building_upgrades/source_sheet.png`
-- User-provided overworld map detail sheet: `assets/map_details/source_sheet.png`
-
-## Visual Direction
-
-- Cold survival-settlement tone: blue glass HUD, snow overlay, pale winter terrain, and high-contrast command panels.
-- Mobile strategy readability: compact resource strip, strong action buttons, selected-building inspector, and large tap targets.
-- Keep references to games like Whiteout Survival at the genre level only: polished survival HUD, winter atmosphere, and clear upgrade loops without copying protected layouts, logos, characters, or exact art treatment.
-
-## Interaction Direction
-
-- Tapping a building opens a contextual command panel with role, output, risk, condition, readiness, workers, and building-specific orders.
-- Buildings accumulate readiness over daily cycles; ready buildings show a map badge so the world itself calls for attention.
-- Construction and upgrades show progress badges on the map.
-- Orders feel immediate and legible: costs on the button, rewards apply instantly, dispatch log confirms the result.
-- Landmarks dim after scouting so the map communicates exploration state.
+Cold blue glass HUD, snow overlay that intensifies in storms, high-contrast resource chips, large bottom nav targets.
