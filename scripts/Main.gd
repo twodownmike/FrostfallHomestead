@@ -32,11 +32,21 @@ const DETAIL_HUNTING := preload("res://assets/map_details/hunting_tracks_l1.png"
 const DETAIL_CAMP := preload("res://assets/map_details/camp_poi.png")
 const DETAIL_CAVE := preload("res://assets/map_details/ice_cave.png")
 const DETAIL_OUTPOST := preload("res://assets/map_details/outpost.png")
+const DETAIL_QUARRY := preload("res://assets/map_details/quarry_l3.png")
+const DETAIL_ORE := preload("res://assets/map_details/ore_mine_l2.png")
+const DETAIL_ROCKS := preload("res://assets/map_details/stone_rocks_l1.png")
+const DETAIL_BLIND := preload("res://assets/map_details/hunting_blind_l3.png")
+const DETAIL_CARCASS := preload("res://assets/map_details/hunting_carcass_l2.png")
+const DETAIL_TIMBER_CAMP := preload("res://assets/map_details/timber_camp_l2.png")
+const DETAIL_SAWMILL := preload("res://assets/map_details/timber_sawmill_l3.png")
 const ICON_HOME := preload("res://assets/kenney_game_icons/PNG/White/2x/home.png")
 const ICON_WRENCH := preload("res://assets/kenney_game_icons/PNG/White/2x/wrench.png")
 const ICON_TARGET := preload("res://assets/kenney_game_icons/PNG/White/2x/target.png")
 const ICON_PLUS := preload("res://assets/kenney_game_icons/PNG/White/2x/plus.png")
 const ICON_MINUS := preload("res://assets/kenney_game_icons/PNG/White/2x/minus.png")
+const SFX_CLICK := preload("res://assets/kenney_ui_pack/Sounds/click-a.ogg")
+const SFX_TAP := preload("res://assets/kenney_ui_pack/Sounds/tap-a.ogg")
+const SFX_SWITCH := preload("res://assets/kenney_ui_pack/Sounds/switch-a.ogg")
 
 const TILE_SIZE := 16
 const TILE_SCALE := 3
@@ -59,6 +69,9 @@ const BUILDING_SPRITES := {
 	"garden": [SPRITE_HUNTERS_LODGE_L1, SPRITE_HUNTERS_LODGE_L2, SPRITE_HUNTERS_LODGE_L3],
 	"well": [SPRITE_SHELTERS_L1, SPRITE_SHELTERS_L2, SPRITE_SHELTERS_L3],
 	"workshop": [SPRITE_COAL_MINE_L1, SPRITE_COAL_MINE_L2, SPRITE_COAL_MINE_L3],
+	"root_cellar": [DETAIL_ROCKS, DETAIL_ORE, DETAIL_QUARRY],
+	"smokehouse": [DETAIL_TIMBER_CAMP, DETAIL_BLIND, DETAIL_SAWMILL],
+	"coop": [DETAIL_CAMP, DETAIL_CARCASS, DETAIL_OUTPOST],
 }
 const RESOURCE_COLORS := {
 	"food": Color("#f3b05a"),
@@ -107,6 +120,7 @@ var season_label: Label
 var workers_label: Label
 var power_label: Label
 var storm_label: Label
+var chapter_label: Label
 var selected_title: Label
 var selected_detail: Label
 var selected_preview: TextureRect
@@ -116,9 +130,16 @@ var selected_output: Label
 var condition_bar: ProgressBar
 var readiness_bar: ProgressBar
 var ability_list: HFlowContainer
+var worker_row: HBoxContainer
 var morale_bar: ProgressBar
 var heat_bar: ProgressBar
 var day_progress: ProgressBar
+var project_bar: ProgressBar
+var project_label: Label
+var pause_button: Button
+var speed_button: Button
+var save_button: Button
+var load_button: Button
 var selected_building := "cabin"
 var ability_rebuild_queued := false
 var world_rebuild_queued := false
@@ -127,6 +148,19 @@ var placing_building_id := ""
 var placement_cell := Vector2i.ZERO
 var ui_ready := false
 var compact_layout := false
+var sfx_player: AudioStreamPlayer
+var modal_layer: CanvasLayer
+var tutorial_panel: PanelContainer
+var tutorial_title: Label
+var tutorial_body: Label
+var choice_panel: PanelContainer
+var choice_title: Label
+var choice_body: Label
+var choice_buttons: VBoxContainer
+var end_panel: PanelContainer
+var end_title: Label
+var end_body: Label
+var control_bar: Control
 
 func _ready() -> void:
 	randomize()
@@ -135,18 +169,56 @@ func _ready() -> void:
 	_build_interface()
 	resized.connect(_apply_responsive_layout)
 	game.changed.connect(_refresh)
+	game.choice_requested.connect(_on_choice_requested)
+	game.game_ended.connect(_on_game_ended)
+	game.tutorial_step.connect(_on_tutorial_step)
+	if game.has_save():
+		game.set_paused(true)
+		_set_status("Welcome back. Press Load to continue, or New for a fresh settlement.")
+	else:
+		game.start_new_game()
 	_refresh()
 
 func _process(delta: float) -> void:
 	game.tick(delta)
 	if day_progress != null:
-		day_progress.value = 20.0 - game.seconds_until_day
+		day_progress.value = game.DAY_LENGTH - game.seconds_until_day
+	if project_bar != null:
+		if game.project_in_progress():
+			project_bar.visible = true
+			project_label.visible = true
+			project_bar.value = game.project_progress() * 100.0
+			project_label.text = game.project_status()
+		else:
+			project_bar.visible = false
+			project_label.visible = false
 
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey:
 		return
 	var key_event := event as InputEventKey
-	if not key_event.pressed:
+	if not key_event.pressed or key_event.echo:
+		return
+
+	if key_event.keycode == KEY_P and placing_building_id == "":
+		game.toggle_pause()
+		_play_sfx(SFX_SWITCH)
+		get_viewport().set_input_as_handled()
+		return
+	if key_event.keycode == KEY_1:
+		game.set_time_scale(1.0)
+		_play_sfx(SFX_SWITCH)
+		get_viewport().set_input_as_handled()
+		return
+	if key_event.keycode == KEY_2:
+		game.set_time_scale(2.0)
+		_play_sfx(SFX_SWITCH)
+		get_viewport().set_input_as_handled()
+		return
+	if key_event.keycode == KEY_3:
+		game.set_time_scale(3.0)
+		_play_sfx(SFX_SWITCH)
+		get_viewport().set_input_as_handled()
 		return
 
 	var direction := Vector2i.ZERO
@@ -173,6 +245,9 @@ func _input(event: InputEvent) -> void:
 	elif placing_building_id != "" and key_event.keycode == KEY_ESCAPE:
 		_cancel_build_placement()
 		get_viewport().set_input_as_handled()
+	elif key_event.keycode == KEY_ESCAPE and (build_menu_panel.visible or goals_menu_panel.visible or log_menu_panel.visible):
+		_hide_overlay_menus()
+		get_viewport().set_input_as_handled()
 	elif direction != Vector2i.ZERO and map_scroll != null and is_instance_valid(map_scroll):
 		var pan_step := KEYBOARD_PAN_STEP * (3 if key_event.shift_pressed else 1)
 		map_scroll.scroll_horizontal += direction.x * pan_step
@@ -181,6 +256,10 @@ func _input(event: InputEvent) -> void:
 
 func _build_interface() -> void:
 	add_theme_font_override("font", FONT_FUTURE)
+
+	sfx_player = AudioStreamPlayer.new()
+	sfx_player.volume_db = -8.0
+	add_child(sfx_player)
 
 	var background: Control = BackgroundScript.new()
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -192,10 +271,12 @@ func _build_interface() -> void:
 
 	var overlay := Control.new()
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(overlay)
 
 	top_margin = MarginContainer.new()
 	top_margin.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	top_margin.mouse_filter = Control.MOUSE_FILTER_STOP
 	top_margin.add_theme_constant_override("margin_left", 18)
 	top_margin.add_theme_constant_override("margin_top", 14)
 	top_margin.add_theme_constant_override("margin_right", 18)
@@ -206,53 +287,59 @@ func _build_interface() -> void:
 	top_margin.add_child(top_stack)
 	top_stack.add_child(_build_top_hud())
 	top_stack.add_child(_build_resource_strip())
+	top_stack.add_child(_build_control_bar())
 
 	right_dock = _build_right_dock()
+	right_dock.mouse_filter = Control.MOUSE_FILTER_STOP
 	right_dock.anchor_left = 1.0
 	right_dock.anchor_right = 1.0
 	right_dock.offset_left = -190
-	right_dock.offset_top = 210
+	right_dock.offset_top = 250
 	right_dock.offset_right = -18
-	right_dock.offset_bottom = 520
+	right_dock.offset_bottom = 560
 	overlay.add_child(right_dock)
 
 	quick_actions = _build_action_bar()
+	quick_actions.mouse_filter = Control.MOUSE_FILTER_STOP
 	quick_actions.anchor_left = 0.0
 	quick_actions.anchor_top = 1.0
 	quick_actions.anchor_right = 0.0
 	quick_actions.anchor_bottom = 1.0
 	quick_actions.offset_left = 18
 	quick_actions.offset_top = -92
-	quick_actions.offset_right = 660
+	quick_actions.offset_right = 720
 	quick_actions.offset_bottom = -18
 	overlay.add_child(quick_actions)
 
 	selected_panel = _build_selected_inspector()
+	selected_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	selected_panel.anchor_left = 0.54
 	selected_panel.anchor_top = 1.0
 	selected_panel.anchor_right = 0.98
 	selected_panel.anchor_bottom = 1.0
 	selected_panel.offset_left = 0
-	selected_panel.offset_top = -230
+	selected_panel.offset_top = -280
 	selected_panel.offset_right = -18
 	selected_panel.offset_bottom = -18
 	overlay.add_child(selected_panel)
 
 	map_status_label = Label.new()
+	map_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	map_status_label.anchor_left = 0.5
 	map_status_label.anchor_right = 0.5
-	map_status_label.offset_left = -260
-	map_status_label.offset_top = 150
-	map_status_label.offset_right = 260
-	map_status_label.offset_bottom = 184
+	map_status_label.offset_left = -300
+	map_status_label.offset_top = 200
+	map_status_label.offset_right = 300
+	map_status_label.offset_bottom = 236
 	map_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	map_status_label.add_theme_color_override("font_color", Color("#fff1c4"))
 	map_status_label.add_theme_font_size_override("font_size", 14)
 	map_status_label.add_theme_stylebox_override("normal", _panel_style(Color(0.02, 0.08, 0.12, 0.72), Color(1, 1, 1, 0.18), 8))
-	map_status_label.text = "Drag or use WASD/arrows to explore. Tap buildings, landmarks, or Build."
+	map_status_label.text = "Drag or WASD to explore. P pause · 1/2/3 speed · Build to expand."
 	overlay.add_child(map_status_label)
 
 	_build_overlay_menus(overlay)
+	_build_modals()
 	ui_ready = true
 	_apply_responsive_layout()
 
@@ -277,7 +364,7 @@ func _build_top_hud() -> Control:
 	title_box.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Settlement power rising through the storm"
+	subtitle.text = "Survive winter. Grow a valley settlement."
 	subtitle.add_theme_color_override("font_color", Color("#a9d7e8"))
 	subtitle.add_theme_font_size_override("font_size", 12)
 	title_box.add_child(subtitle)
@@ -286,6 +373,9 @@ func _build_top_hud() -> Control:
 	row.add_child(day_label)
 	season_label = _make_chip()
 	row.add_child(season_label)
+	chapter_label = _make_chip()
+	chapter_label.custom_minimum_size = Vector2(140, 34)
+	row.add_child(chapter_label)
 	workers_label = _make_chip()
 	row.add_child(workers_label)
 	power_label = _make_chip()
@@ -296,7 +386,8 @@ func _build_top_hud() -> Control:
 	day_progress = ProgressBar.new()
 	day_progress.min_value = 0
 	day_progress.max_value = 20
-	day_progress.custom_minimum_size = Vector2(180, 18)
+	day_progress.custom_minimum_size = Vector2(160, 18)
+	day_progress.tooltip_text = "Day progress"
 	day_progress.add_theme_stylebox_override("background", _meter_background())
 	day_progress.add_theme_stylebox_override("fill", _meter_fill(Color("#65c7f0")))
 	row.add_child(day_progress)
@@ -310,7 +401,7 @@ func _build_resource_strip() -> Control:
 
 	for resource_name in ["food", "wood", "water", "tools", "seed"]:
 		var chip := PanelContainer.new()
-		chip.custom_minimum_size = Vector2(150, 0)
+		chip.custom_minimum_size = Vector2(140, 0)
 		chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		chip.add_theme_stylebox_override("panel", _panel_style(Color(0.94, 0.99, 1.0, 0.78), Color(1, 1, 1, 0.58), 8))
 		resource_chips[resource_name] = chip
@@ -334,6 +425,49 @@ func _build_resource_strip() -> Control:
 
 	return strip
 
+func _build_control_bar() -> Control:
+	control_bar = HFlowContainer.new()
+	control_bar.add_theme_constant_override("separation", 8)
+	control_bar.add_theme_constant_override("v_separation", 6)
+
+	pause_button = _make_action_button("Pause", ICON_TARGET, Callable(self, "_on_pause_pressed"), Color("#3a5f7a"))
+	pause_button.custom_minimum_size = Vector2(110, 42)
+	control_bar.add_child(pause_button)
+
+	speed_button = _make_action_button("1x", ICON_PLUS, Callable(self, "_on_speed_pressed"), Color("#2f6f8a"))
+	speed_button.custom_minimum_size = Vector2(90, 42)
+	control_bar.add_child(speed_button)
+
+	save_button = _make_action_button("Save", ICON_HOME, Callable(self, "_on_save_pressed"), Color("#356b5f"))
+	save_button.custom_minimum_size = Vector2(100, 42)
+	control_bar.add_child(save_button)
+
+	load_button = _make_action_button("Load", ICON_HOME, Callable(self, "_on_load_pressed"), Color("#425f75"))
+	load_button.custom_minimum_size = Vector2(100, 42)
+	control_bar.add_child(load_button)
+
+	var new_game_btn := _make_action_button("New", ICON_PLUS, Callable(self, "_on_new_game_pressed"), Color("#7a4a3a"))
+	new_game_btn.custom_minimum_size = Vector2(90, 42)
+	control_bar.add_child(new_game_btn)
+
+	project_label = Label.new()
+	project_label.add_theme_color_override("font_color", Color("#e8f6ff"))
+	project_label.add_theme_font_size_override("font_size", 12)
+	project_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	project_label.visible = false
+	control_bar.add_child(project_label)
+
+	project_bar = ProgressBar.new()
+	project_bar.min_value = 0
+	project_bar.max_value = 100
+	project_bar.custom_minimum_size = Vector2(160, 22)
+	project_bar.show_percentage = true
+	project_bar.visible = false
+	project_bar.add_theme_stylebox_override("background", _meter_background())
+	project_bar.add_theme_stylebox_override("fill", _meter_fill(Color("#f0b35a")))
+	control_bar.add_child(project_bar)
+
+	return control_bar
 func _build_map_surface() -> Control:
 	var panel := Control.new()
 
@@ -415,25 +549,25 @@ func _apply_responsive_layout() -> void:
 		selected_panel.anchor_right = 1.0
 		selected_panel.anchor_bottom = 1.0
 		selected_panel.offset_left = margin
-		selected_panel.offset_top = -430 if portrait else -360
+		selected_panel.offset_top = -460 if portrait else -390
 		selected_panel.offset_right = -margin
 		selected_panel.offset_bottom = -168
 
 		map_status_label.anchor_left = 0.0
 		map_status_label.anchor_right = 1.0
 		map_status_label.offset_left = margin
-		map_status_label.offset_top = 172
+		map_status_label.offset_top = 220
 		map_status_label.offset_right = -margin
-		map_status_label.offset_bottom = 208
+		map_status_label.offset_bottom = 256
 	else:
 		right_dock.anchor_left = 1.0
 		right_dock.anchor_top = 0.0
 		right_dock.anchor_right = 1.0
 		right_dock.anchor_bottom = 0.0
 		right_dock.offset_left = -190
-		right_dock.offset_top = 210
+		right_dock.offset_top = 250
 		right_dock.offset_right = -18
-		right_dock.offset_bottom = 520
+		right_dock.offset_bottom = 560
 
 		quick_actions.anchor_left = 0.0
 		quick_actions.anchor_top = 1.0
@@ -441,24 +575,24 @@ func _apply_responsive_layout() -> void:
 		quick_actions.anchor_bottom = 1.0
 		quick_actions.offset_left = 18
 		quick_actions.offset_top = -92
-		quick_actions.offset_right = 660
+		quick_actions.offset_right = 720
 		quick_actions.offset_bottom = -18
 
-		selected_panel.anchor_left = 0.54
+		selected_panel.anchor_left = 0.52
 		selected_panel.anchor_top = 1.0
 		selected_panel.anchor_right = 0.98
 		selected_panel.anchor_bottom = 1.0
 		selected_panel.offset_left = 0
-		selected_panel.offset_top = -300
+		selected_panel.offset_top = -320
 		selected_panel.offset_right = -18
 		selected_panel.offset_bottom = -18
 
 		map_status_label.anchor_left = 0.5
 		map_status_label.anchor_right = 0.5
-		map_status_label.offset_left = -260
-		map_status_label.offset_top = 150
-		map_status_label.offset_right = 260
-		map_status_label.offset_bottom = 184
+		map_status_label.offset_left = -300
+		map_status_label.offset_top = 200
+		map_status_label.offset_right = 300
+		map_status_label.offset_bottom = 236
 
 	_layout_overlay_menus(compact_layout, margin)
 
@@ -583,65 +717,6 @@ func _toggle_overlay(panel: Control) -> void:
 	if selected_panel != null:
 		selected_panel.visible = not panel.visible
 
-func _build_world_panel() -> Control:
-	var panel := PanelContainer.new()
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.04, 0.13, 0.22, 0.84), Color(0.84, 0.97, 1.0, 0.42), 8))
-
-	var stack := Control.new()
-	stack.custom_minimum_size = Vector2(0, 500)
-	panel.add_child(stack)
-
-	var content := VBoxContainer.new()
-	content.set_anchors_preset(Control.PRESET_FULL_RECT)
-	content.add_theme_constant_override("separation", 8)
-	stack.add_child(content)
-
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 10)
-	content.add_child(header)
-
-	selected_title = Label.new()
-	selected_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	selected_title.add_theme_color_override("font_color", Color("#f8fcff"))
-	selected_title.add_theme_font_size_override("font_size", 24)
-	header.add_child(selected_title)
-
-	selected_detail = Label.new()
-	selected_detail.add_theme_color_override("font_color", Color("#bde3f3"))
-	selected_detail.add_theme_font_size_override("font_size", 15)
-	header.add_child(selected_detail)
-
-	move_mode_button = _make_action_button("Move: Off", ICON_TARGET, Callable(self, "_toggle_move_mode"), Color("#425f75"))
-	move_mode_button.custom_minimum_size = Vector2(150, 44)
-	header.add_child(move_mode_button)
-
-	map_status_label = Label.new()
-	map_status_label.add_theme_color_override("font_color", Color("#f1c684"))
-	map_status_label.add_theme_font_size_override("font_size", 13)
-	map_status_label.text = "Drag the map to pan. Toggle Move to relocate buildings."
-	content.add_child(map_status_label)
-
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0, 390)
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_theme_stylebox_override("panel", _panel_style(Color(0.80, 0.92, 0.96, 0.18), Color(1, 1, 1, 0.30), 8))
-	content.add_child(scroll)
-
-	world_grid = Control.new()
-	world_grid.custom_minimum_size = Vector2(WORLD_COLUMNS * TILE_PIXEL, WORLD_ROWS * TILE_PIXEL)
-	scroll.add_child(world_grid)
-	_build_world_grid(world_grid)
-
-	content.add_child(_build_selected_inspector())
-
-	var snow: Control = SnowOverlayScript.new()
-	snow.set_anchors_preset(Control.PRESET_FULL_RECT)
-	stack.add_child(snow)
-
-	return panel
-
 func _build_selected_inspector() -> Control:
 	var panel := PanelContainer.new()
 	panel.clip_contents = true
@@ -708,6 +783,31 @@ func _build_selected_inspector() -> Control:
 	readiness_bar.custom_minimum_size = Vector2(104, 38)
 	info_row.add_child(readiness_bar)
 
+	worker_row = HBoxContainer.new()
+	worker_row.add_theme_constant_override("separation", 8)
+	box.add_child(worker_row)
+
+	var worker_label := Label.new()
+	worker_label.text = "Workers"
+	worker_label.add_theme_color_override("font_color", Color("#cfe9f5"))
+	worker_label.add_theme_font_size_override("font_size", 13)
+	worker_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	worker_row.add_child(worker_label)
+
+	var worker_minus := _make_icon_button(ICON_MINUS, func() -> void:
+		_play_sfx(SFX_TAP)
+		game.assign_worker(selected_building, -1)
+	)
+	worker_row.add_child(worker_minus)
+	worker_row.set_meta("minus", worker_minus)
+
+	var worker_plus := _make_icon_button(ICON_PLUS, func() -> void:
+		_play_sfx(SFX_TAP)
+		game.assign_worker(selected_building, 1)
+	)
+	worker_row.add_child(worker_plus)
+	worker_row.set_meta("plus", worker_plus)
+
 	ability_list = HFlowContainer.new()
 	ability_list.add_theme_constant_override("separation", 8)
 	ability_list.add_theme_constant_override("v_separation", 6)
@@ -718,10 +818,16 @@ func _build_selected_inspector() -> Control:
 func _build_action_bar() -> Control:
 	var bar := HBoxContainer.new()
 	bar.add_theme_constant_override("separation", 10)
-	var repair := _make_action_button("Repair Hearth", ICON_WRENCH, Callable(game, "repair_hearth"), Color("#176f9c"))
+	var repair := _make_action_button("Repair Hearth", ICON_WRENCH, func() -> void:
+		_play_sfx(SFX_CLICK)
+		game.repair_hearth()
+	, Color("#176f9c"))
 	repair.custom_minimum_size = Vector2(155, 54)
 	bar.add_child(repair)
-	var expedition := _make_action_button("Expedition", ICON_TARGET, Callable(game, "send_expedition"), Color("#2f6b62"))
+	var expedition := _make_action_button("Expedition", ICON_TARGET, func() -> void:
+		_play_sfx(SFX_CLICK)
+		game.send_expedition()
+	, Color("#2f6b62"))
 	expedition.custom_minimum_size = Vector2(145, 54)
 	bar.add_child(expedition)
 
@@ -731,71 +837,6 @@ func _build_action_bar() -> Control:
 	bar.add_child(heat_bar)
 
 	return bar
-
-func _build_lower_panels() -> Control:
-	var lower := HBoxContainer.new()
-	lower.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	lower.add_theme_constant_override("separation", 12)
-
-	var buildings_panel := PanelContainer.new()
-	buildings_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	buildings_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.94, 0.98, 1.0, 0.90), Color(1, 1, 1, 0.58), 8))
-	lower.add_child(buildings_panel)
-
-	var building_list := VBoxContainer.new()
-	building_list.add_theme_constant_override("separation", 8)
-	buildings_panel.add_child(building_list)
-
-	var building_heading := Label.new()
-	building_heading.text = "Build Queue"
-	building_heading.add_theme_color_override("font_color", Color("#16354b"))
-	building_heading.add_theme_font_size_override("font_size", 21)
-	building_list.add_child(building_heading)
-
-	for building_id in game.building_ids():
-		var row := _make_building_row(building_id)
-		building_rows[building_id] = row
-		building_list.add_child(row["container"])
-
-	var goals_panel := PanelContainer.new()
-	goals_panel.custom_minimum_size = Vector2(320, 0)
-	goals_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.92, 0.98, 1.0, 0.84), Color(1, 1, 1, 0.50), 8))
-	lower.add_child(goals_panel)
-
-	var goals_box := VBoxContainer.new()
-	goals_box.add_theme_constant_override("separation", 8)
-	goals_panel.add_child(goals_box)
-
-	var goals_heading := Label.new()
-	goals_heading.text = "Survival Goals"
-	goals_heading.add_theme_color_override("font_color", Color("#16354b"))
-	goals_heading.add_theme_font_size_override("font_size", 21)
-	goals_box.add_child(goals_heading)
-
-	objective_list = VBoxContainer.new()
-	objective_list.add_theme_constant_override("separation", 6)
-	goals_box.add_child(objective_list)
-
-	var log_panel := PanelContainer.new()
-	log_panel.custom_minimum_size = Vector2(340, 0)
-	log_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.03, 0.10, 0.17, 0.84), Color(0.71, 0.91, 1.0, 0.36), 8))
-	lower.add_child(log_panel)
-
-	var log_box := VBoxContainer.new()
-	log_box.add_theme_constant_override("separation", 8)
-	log_panel.add_child(log_box)
-
-	var log_heading := Label.new()
-	log_heading.text = "Dispatch Log"
-	log_heading.add_theme_color_override("font_color", Color("#eef9ff"))
-	log_heading.add_theme_font_size_override("font_size", 21)
-	log_box.add_child(log_heading)
-
-	event_list = VBoxContainer.new()
-	event_list.add_theme_constant_override("separation", 6)
-	log_box.add_child(event_list)
-
-	return lower
 
 func _build_world_grid(world_grid: Control) -> void:
 	building_buttons.clear()
@@ -873,8 +914,8 @@ func _add_building_sprite(board: Control, building_id: String) -> void:
 
 	var badge := Label.new()
 	badge.text = "READY"
-	badge.position = button.position + Vector2(sprite_size.x * 0.28, sprite_size.y - 20)
-	badge.custom_minimum_size = Vector2(sprite_size.x * 0.44, 18)
+	badge.position = button.position + Vector2(sprite_size.x * 0.18, sprite_size.y - 22)
+	badge.custom_minimum_size = Vector2(maxi(52, int(sprite_size.x * 0.55)), 18)
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -962,16 +1003,19 @@ func _terrain_modulate(tile_id: int) -> Color:
 	return Color.WHITE
 
 func _select_building(building_id: String) -> void:
+	_play_sfx(SFX_TAP)
 	selected_building = building_id
+	_hide_overlay_menus()
 	_refresh()
 
 func _toggle_move_mode() -> void:
+	_play_sfx(SFX_SWITCH)
 	placing_building_id = ""
 	move_mode = not move_mode
 	if move_mode:
 		_hide_overlay_menus()
 	_set_move_button_text("Move: On" if move_mode else "Move")
-	_set_status("Move mode: tap an open snow tile to place %s." % game.buildings[selected_building]["name"] if move_mode else "Drag or use WASD/arrows to explore. Tap buildings, landmarks, or Build.")
+	_set_status("Move mode: tap an open snow tile to place %s." % game.buildings[selected_building]["name"] if move_mode else "Drag or WASD to explore. P pause · 1/2/3 speed · Build to expand.")
 	_set_map_tiles_enabled(move_mode)
 
 func _handle_map_cell_pressed(cell: Vector2i) -> void:
@@ -1239,23 +1283,44 @@ func _refresh() -> void:
 	if not ui_ready or not _hud_ready():
 		return
 	_ensure_selected_building()
+	_sync_building_positions_with_state()
 	day_label.text = "DAY %s" % game.day
 	season_label.text = game.season.to_upper()
+	if chapter_label != null:
+		chapter_label.text = "CH %s" % game.current_chapter
 	workers_label.text = "IDLE %s/%s" % [game.available_workers, game.homesteaders]
 	power_label.text = "POWER %s" % game.settlement_power()
 	storm_label.text = "STORM %s%%" % game.storm_pressure()
 	if game.project_in_progress() and not move_mode and placing_building_id == "":
 		_set_status("Active project: %s." % game.project_status())
 	if game.game_over:
-		_set_status("Settlement failed. The storm has overtaken Frostfall Homestead.")
-	day_progress.value = 20.0 - game.seconds_until_day
+		if game.victory:
+			_set_status("Victory — Frostfall stands strong. %s" % game.end_summary())
+		else:
+			_set_status("Settlement failed. The storm has overtaken Frostfall Homestead.")
+	day_progress.max_value = game.DAY_LENGTH
+	day_progress.value = game.DAY_LENGTH - game.seconds_until_day
 	morale_bar.value = game.morale
 	heat_bar.value = game.heat
+
+	if pause_button != null:
+		pause_button.text = "Resume" if game.paused else "Pause"
+		pause_button.disabled = game.game_over and not game.paused
+	if speed_button != null:
+		var scale_label := str(int(game.time_scale)) if fmod(game.time_scale, 1.0) == 0.0 else str(game.time_scale)
+		speed_button.text = "%sx" % scale_label
+	if load_button != null:
+		load_button.disabled = not game.has_save()
+	if save_button != null:
+		save_button.disabled = game.game_over
 
 	for resource_name in resource_labels.keys():
 		var amount := int(game.resources[resource_name])
 		resource_labels[resource_name].text = "%s\n%s" % [resource_name.to_upper(), amount]
 		resource_chips[resource_name].add_theme_stylebox_override("panel", _resource_style(resource_name, amount))
+
+	if not game.has_building(selected_building):
+		return
 
 	var selected: Dictionary = game.buildings[selected_building]
 	if selected_preview != null and selected_title != null and selected_detail != null and selected_role != null and selected_output != null and selected_risk != null:
@@ -1276,6 +1341,12 @@ func _refresh() -> void:
 		condition_bar.value = selected["condition"]
 	if readiness_bar != null:
 		readiness_bar.value = selected["readiness"]
+	if worker_row != null and worker_row.has_meta("plus") and worker_row.has_meta("minus"):
+		var w_plus: Button = worker_row.get_meta("plus")
+		var w_minus: Button = worker_row.get_meta("minus")
+		var operational := game.is_building_operational(selected_building)
+		w_plus.disabled = game.game_over or not operational or game.available_workers <= 0 or int(selected["workers"]) >= int(selected["max_workers"])
+		w_minus.disabled = game.game_over or not operational or int(selected["workers"]) <= 0
 	if ability_list != null:
 		_queue_ability_rebuild()
 
@@ -1326,6 +1397,8 @@ func _refresh() -> void:
 			row["build"].disabled = true
 
 	for building_id in building_buttons.keys():
+		if not game.has_building(building_id):
+			continue
 		var button: TextureButton = building_buttons[building_id]
 		var building: Dictionary = game.buildings[building_id]
 		var badge: Label = building_badges[building_id]
@@ -1336,13 +1409,41 @@ func _refresh() -> void:
 			int(building["readiness"]),
 			int(building["condition"]),
 		]
-		badge.visible = game.is_building_operational(building_id) and building["readiness"] >= 100.0
-		if building_id == selected_building:
-			button.modulate = Color(1.55, 1.55, 1.55)
-		elif building["readiness"] >= 100.0:
-			button.modulate = Color("#d8fff1")
+		var under_construction := bool(building.get("under_construction", false))
+		var upgrading: bool = str(game.active_project.get("building_id", "")) == building_id and str(game.active_project.get("type", "")) == "upgrade"
+		if under_construction or upgrading:
+			badge.visible = true
+			badge.text = "%s%%" % int(game.project_progress() * 100.0) if game.active_project.get("building_id", "") == building_id else "..."
+			badge.add_theme_stylebox_override("normal", _badge_style_alt(Color("#f0c36a")))
+			button.modulate = Color(0.85, 0.9, 1.0, 0.75)
+		elif game.is_building_operational(building_id) and building["readiness"] >= 100.0:
+			badge.visible = true
+			badge.text = "READY"
+			badge.add_theme_stylebox_override("normal", _badge_style())
+			button.modulate = Color("#d8fff1") if building_id != selected_building else Color(1.55, 1.55, 1.55)
+		elif float(building["condition"]) < 30.0:
+			badge.visible = true
+			badge.text = "WEAK"
+			badge.add_theme_stylebox_override("normal", _badge_style_alt(Color("#f08a6a")))
+			button.modulate = Color(1.1, 0.85, 0.8) if building_id != selected_building else Color(1.55, 1.55, 1.55)
 		else:
-			button.modulate = Color(0.95, 1.0, 1.04)
+			badge.visible = false
+			button.modulate = Color(1.55, 1.55, 1.55) if building_id == selected_building else Color(0.95, 1.0, 1.04)
+
+	# Dim scouted landmarks
+	for i in range(map_detail_buttons.size()):
+		if i >= MAP_DETAILS.size():
+			break
+		var detail: Dictionary = MAP_DETAILS[i]
+		var detail_btn: TextureButton = map_detail_buttons[i]
+		if not is_instance_valid(detail_btn):
+			continue
+		if game.scouted_sites.has(detail["id"]):
+			detail_btn.modulate = Color(0.55, 0.65, 0.7, 0.55)
+			detail_btn.tooltip_text = "%s (scouted)" % detail["name"]
+		else:
+			detail_btn.modulate = Color.WHITE
+			detail_btn.tooltip_text = detail["name"]
 
 	for child in event_list.get_children():
 		child.queue_free()
@@ -1367,6 +1468,256 @@ func _hud_ready() -> bool:
 		and day_progress != null \
 		and morale_bar != null \
 		and heat_bar != null
+
+func _sync_building_positions_with_state() -> void:
+	var missing := false
+	for building_id in game.buildings.keys():
+		if not building_positions.has(building_id):
+			building_positions[building_id] = _find_open_cell_near_cabin()
+			missing = true
+	var stale: Array[String] = []
+	for building_id in building_positions.keys():
+		if not game.has_building(building_id):
+			stale.append(building_id)
+	for building_id in stale:
+		building_positions.erase(building_id)
+		missing = true
+	if missing:
+		_queue_world_rebuild()
+
+func _find_open_cell_near_cabin() -> Vector2i:
+	var origin: Vector2i = building_positions.get("cabin", Vector2i(14, 10))
+	for radius in range(1, 8):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				var cell := Vector2i(origin.x + dx, origin.y + dy)
+				if cell.x < 1 or cell.y < 1 or cell.x >= WORLD_COLUMNS - 1 or cell.y >= WORLD_ROWS - 1:
+					continue
+				if not _is_occupied(cell):
+					return cell
+	return Vector2i(clampi(origin.x + 2, 0, WORLD_COLUMNS - 1), clampi(origin.y + 2, 0, WORLD_ROWS - 1))
+
+func _store_layout_to_game() -> void:
+	var layout := {}
+	for building_id in building_positions.keys():
+		var cell: Vector2i = building_positions[building_id]
+		layout[building_id] = {"x": cell.x, "y": cell.y}
+	game.layout_data = {"buildings": layout}
+
+func _restore_layout_from_game() -> void:
+	building_positions = {"cabin": Vector2i(14, 10)}
+	var layout: Dictionary = game.layout_data.get("buildings", {})
+	for building_id in layout.keys():
+		if not game.has_building(building_id):
+			continue
+		var entry: Dictionary = layout[building_id]
+		building_positions[building_id] = Vector2i(int(entry.get("x", 14)), int(entry.get("y", 10)))
+	for building_id in game.buildings.keys():
+		if not building_positions.has(building_id):
+			building_positions[building_id] = _find_open_cell_near_cabin()
+	_queue_world_rebuild()
+
+func _build_modals() -> void:
+	modal_layer = CanvasLayer.new()
+	modal_layer.layer = 40
+	add_child(modal_layer)
+
+	tutorial_panel = _make_modal_shell()
+	tutorial_panel.visible = false
+	modal_layer.add_child(tutorial_panel)
+	var t_box: VBoxContainer = tutorial_panel.get_meta("content")
+	tutorial_title = Label.new()
+	tutorial_title.add_theme_color_override("font_color", Color("#153247"))
+	tutorial_title.add_theme_font_size_override("font_size", 22)
+	t_box.add_child(tutorial_title)
+	tutorial_body = Label.new()
+	tutorial_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tutorial_body.add_theme_color_override("font_color", Color("#2a4a5c"))
+	tutorial_body.add_theme_font_size_override("font_size", 15)
+	t_box.add_child(tutorial_body)
+	var t_row := HBoxContainer.new()
+	t_row.add_theme_constant_override("separation", 10)
+	t_box.add_child(t_row)
+	var skip_btn := _make_action_button("Skip", ICON_MINUS, Callable(self, "_on_tutorial_skip"), Color("#65757c"))
+	skip_btn.custom_minimum_size = Vector2(120, 44)
+	t_row.add_child(skip_btn)
+	var next_btn := _make_action_button("Next", ICON_PLUS, Callable(self, "_on_tutorial_next"), Color("#1f7fab"))
+	next_btn.custom_minimum_size = Vector2(140, 44)
+	t_row.add_child(next_btn)
+
+	choice_panel = _make_modal_shell()
+	choice_panel.visible = false
+	modal_layer.add_child(choice_panel)
+	var c_box: VBoxContainer = choice_panel.get_meta("content")
+	choice_title = Label.new()
+	choice_title.add_theme_color_override("font_color", Color("#153247"))
+	choice_title.add_theme_font_size_override("font_size", 22)
+	c_box.add_child(choice_title)
+	choice_body = Label.new()
+	choice_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	choice_body.add_theme_color_override("font_color", Color("#2a4a5c"))
+	choice_body.add_theme_font_size_override("font_size", 15)
+	c_box.add_child(choice_body)
+	choice_buttons = VBoxContainer.new()
+	choice_buttons.add_theme_constant_override("separation", 8)
+	c_box.add_child(choice_buttons)
+
+	end_panel = _make_modal_shell()
+	end_panel.visible = false
+	modal_layer.add_child(end_panel)
+	var e_box: VBoxContainer = end_panel.get_meta("content")
+	end_title = Label.new()
+	end_title.add_theme_color_override("font_color", Color("#153247"))
+	end_title.add_theme_font_size_override("font_size", 24)
+	e_box.add_child(end_title)
+	end_body = Label.new()
+	end_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	end_body.add_theme_color_override("font_color", Color("#2a4a5c"))
+	end_body.add_theme_font_size_override("font_size", 15)
+	e_box.add_child(end_body)
+	var restart_btn := _make_action_button("New Settlement", ICON_PLUS, Callable(self, "_on_new_game_pressed"), Color("#1f7fab"))
+	restart_btn.custom_minimum_size = Vector2(200, 48)
+	e_box.add_child(restart_btn)
+
+func _make_modal_shell() -> PanelContainer:
+	var dim := PanelContainer.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.add_theme_stylebox_override("panel", _panel_style(Color(0.01, 0.04, 0.08, 0.62), Color(0, 0, 0, 0), 0))
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.add_child(center)
+
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(420, 0)
+	card.add_theme_stylebox_override("panel", _panel_style(Color(0.96, 0.99, 1.0, 0.98), Color(1, 1, 1, 0.7), 12))
+	center.add_child(card)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	card.add_child(box)
+	dim.set_meta("content", box)
+	return dim
+
+func _on_tutorial_step(_step: int, title: String, body: String) -> void:
+	if tutorial_panel == null:
+		return
+	tutorial_title.text = title
+	tutorial_body.text = body
+	tutorial_panel.visible = true
+	game.set_paused(true)
+
+func _on_tutorial_next() -> void:
+	_play_sfx(SFX_CLICK)
+	tutorial_panel.visible = false
+	game.advance_tutorial()
+	if game.tutorial_complete:
+		game.set_paused(false)
+
+func _on_tutorial_skip() -> void:
+	_play_sfx(SFX_SWITCH)
+	tutorial_panel.visible = false
+	game.skip_tutorial()
+	game.set_paused(false)
+
+func _on_choice_requested(_event_id: String, title: String, body: String, options: Array) -> void:
+	if choice_panel == null:
+		return
+	choice_title.text = title
+	choice_body.text = body
+	for child in choice_buttons.get_children():
+		child.queue_free()
+	for option in options:
+		var option_id := str(option.get("id", ""))
+		var label := str(option.get("label", "Choose"))
+		var btn := _make_action_button(label, ICON_TARGET, _resolve_choice.bind(option_id), Color("#1f6f94"))
+		btn.custom_minimum_size = Vector2(280, 48)
+		btn.add_theme_font_size_override("font_size", 14)
+		choice_buttons.add_child(btn)
+	choice_panel.visible = true
+
+func _resolve_choice(option_id: String) -> void:
+	_play_sfx(SFX_CLICK)
+	choice_panel.visible = false
+	game.resolve_choice(option_id)
+	if not game.game_over:
+		game.set_paused(false)
+
+func _on_game_ended(won: bool, summary: String) -> void:
+	if end_panel == null:
+		return
+	end_title.text = "Valley Secured" if won else "Settlement Lost"
+	end_body.text = ("%s\n\n%s" % [
+		"Frostfall outlasted the worst of winter. Your homestead is a true valley stronghold." if won \
+			else "The storm and shortages broke Frostfall. Learn from the log and try a new settlement.",
+		summary,
+	])
+	end_panel.visible = true
+	_play_sfx(SFX_SWITCH)
+
+func _on_pause_pressed() -> void:
+	_play_sfx(SFX_SWITCH)
+	game.toggle_pause()
+
+func _on_speed_pressed() -> void:
+	_play_sfx(SFX_SWITCH)
+	game.cycle_time_scale()
+
+func _on_save_pressed() -> void:
+	_play_sfx(SFX_CLICK)
+	_store_layout_to_game()
+	if game.save_game():
+		_set_status("Game saved.")
+		game.add_log("Manual save complete.")
+	else:
+		_set_status("Save failed.")
+
+func _on_load_pressed() -> void:
+	_play_sfx(SFX_CLICK)
+	if not game.has_save():
+		_set_status("No save found.")
+		return
+	if game.load_game():
+		placing_building_id = ""
+		move_mode = false
+		_set_move_button_text("Move")
+		_set_map_tiles_enabled(false)
+		_hide_overlay_menus()
+		if tutorial_panel:
+			tutorial_panel.visible = false
+		if choice_panel:
+			choice_panel.visible = false
+		if end_panel:
+			end_panel.visible = false
+		_restore_layout_from_game()
+		_set_status("Save loaded — day %s." % game.day)
+		_refresh()
+	else:
+		_set_status("Load failed.")
+
+func _on_new_game_pressed() -> void:
+	_play_sfx(SFX_CLICK)
+	if tutorial_panel:
+		tutorial_panel.visible = false
+	if choice_panel:
+		choice_panel.visible = false
+	if end_panel:
+		end_panel.visible = false
+	placing_building_id = ""
+	move_mode = false
+	_set_move_button_text("Move")
+	_set_map_tiles_enabled(false)
+	building_positions = {"cabin": Vector2i(14, 10)}
+	game.start_new_game()
+	_queue_world_rebuild()
+	_refresh()
+
+func _play_sfx(stream: AudioStream) -> void:
+	if sfx_player == null:
+		return
+	sfx_player.stream = stream
+	sfx_player.play()
 
 func _ensure_selected_building() -> void:
 	if game.has_building(selected_building):
@@ -1481,6 +1832,7 @@ func _make_goal_card(goal: Dictionary) -> Control:
 	return panel
 
 func _perform_selected_action(action_id: String) -> void:
+	_play_sfx(SFX_CLICK)
 	game.perform_building_action(selected_building, action_id)
 
 func _make_chip() -> Label:
@@ -1594,8 +1946,11 @@ func _meter_fill(fill_color: Color) -> StyleBoxFlat:
 	return style
 
 func _badge_style() -> StyleBoxFlat:
+	return _badge_style_alt(Color("#9ff0ff"))
+
+func _badge_style_alt(bg: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#9ff0ff")
+	style.bg_color = bg
 	style.border_color = Color(1, 1, 1, 0.55)
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(5)
